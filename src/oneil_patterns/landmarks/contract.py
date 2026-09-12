@@ -1,0 +1,1 @@
+P1_LANDMARK_CONTRACT_VERSION = "p1-landmark-v1"
