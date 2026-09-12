@@ -18,23 +18,32 @@ class StabilityResult:
     stable: bool
 
 
+def _signature(items: Iterable[Landmark]) -> list[tuple[str, float, object, object, str]]:
+    return [
+        (x.type.value, round(float(x.price), 10), x.price_date, x.confirmed_date, x.method)
+        for x in items
+    ]
+
+
 def prefix_stability(frame: pd.DataFrame, extractor: Extractor, min_prefix: int = 6) -> StabilityResult:
-    """Verify that already-confirmed landmarks do not mutate when future bars arrive."""
+    """Detect repainting of landmarks that were already knowable at each prefix."""
     if len(frame) < min_prefix:
         return StabilityResult(0, 0, True)
 
+    data = frame.sort_values("date").reset_index(drop=True)
+    full = extractor(data)
     violations = 0
     checked = 0
-    for end in range(min_prefix, len(frame)):
-        prefix = frame.iloc[:end].copy()
-        full_to_same_date = frame.iloc[:end].copy()
-        a = extractor(prefix)
-        b = extractor(full_to_same_date)
-        sig_a = [(x.type.value, x.price, x.price_date, x.confirmed_date, x.method) for x in a]
-        sig_b = [(x.type.value, x.price, x.price_date, x.confirmed_date, x.method) for x in b]
+
+    for end in range(min_prefix, len(data) + 1):
+        prefix = data.iloc[:end].copy()
+        cutoff = pd.Timestamp(prefix.iloc[-1]["date"]).date()
+        contemporary = extractor(prefix)
+        eventual_known = [x for x in full if x.confirmed_date <= cutoff]
         checked += 1
-        if sig_a != sig_b:
+        if _signature(contemporary) != _signature(eventual_known):
             violations += 1
+
     return StabilityResult(checked, violations, violations == 0)
 
 
@@ -43,11 +52,10 @@ def landmark_signature(items: Iterable[Landmark]) -> list[tuple[str, object, obj
 
 
 def agreement_by_date(a: Iterable[Landmark], b: Iterable[Landmark], tolerance_sessions: int = 1) -> dict[str, float]:
-    """Simple morphology-facing agreement metric independent of returns.
+    """Simple morphology-facing agreement metric independent of returns."""
+    if tolerance_sessions < 0:
+        raise ValueError("tolerance_sessions must be >= 0")
 
-    A landmark matches when type is equal and price dates are within the requested
-    business-session tolerance. This is intentionally diagnostic, not a tuned score.
-    """
     a = list(a)
     b = list(b)
     if not a and not b:
@@ -55,6 +63,7 @@ def agreement_by_date(a: Iterable[Landmark], b: Iterable[Landmark], tolerance_se
 
     used: set[int] = set()
     matched = 0
+    max_calendar_days = tolerance_sessions * 3
     for x in a:
         best = None
         best_dist = None
@@ -62,7 +71,7 @@ def agreement_by_date(a: Iterable[Landmark], b: Iterable[Landmark], tolerance_se
             if j in used or x.type != y.type:
                 continue
             dist = abs((pd.Timestamp(x.price_date) - pd.Timestamp(y.price_date)).days)
-            if dist <= tolerance_sessions * 3 and (best_dist is None or dist < best_dist):
+            if dist <= max_calendar_days and (best_dist is None or dist < best_dist):
                 best = j
                 best_dist = dist
         if best is not None:
