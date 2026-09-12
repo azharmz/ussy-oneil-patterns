@@ -92,7 +92,10 @@ def build_double_bottom_geometry(
         right_recovery_to_left = right_recovery_high.price / left_high.price
 
     confirmed = max(m.confirmed_date for m in marks)
-    end_index = indices[-1]
+    # Core W duration is left high -> second trough. Optional right recovery is
+    # completion evidence and must not silently change the theory duration gate.
+    trough2_index = session_index[trough_2.price_date]
+    left_index = session_index[left_high.price_date]
 
     return DoubleBottomGeometry(
         left_high=left_high,
@@ -101,16 +104,17 @@ def build_double_bottom_geometry(
         trough_2=trough_2,
         right_recovery_high=right_recovery_high,
         confirmed_date=confirmed,
-        duration_sessions=end_index - indices[0] + 1,
+        duration_sessions=trough2_index - left_index + 1,
         overall_depth_pct=overall_depth,
-        trough_spacing_sessions=indices[3] - indices[1],
+        trough_spacing_sessions=session_index[trough_2.price_date] - session_index[trough_1.price_date],
         trough2_vs_trough1_pct=trough2_vs_trough1,
         middle_peak_rebound_pct=middle_peak_rebound,
         middle_peak_recovered_fraction=middle_recovered_fraction,
         right_recovery_pct=right_recovery_pct,
         right_recovery_to_left_high_ratio=right_recovery_to_left,
         evidence={
-            "version": "double-bottom-geometry-v0",
+            "version": "double-bottom-geometry-v0.1",
+            "duration_boundary": "left_high_to_trough_2",
             "second_trough_undercuts_first": trough_2.price < trough_1.price,
             "right_recovery_present": right_recovery_high is not None,
         },
