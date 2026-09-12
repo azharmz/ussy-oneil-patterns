@@ -14,8 +14,8 @@ Last updated: 2026-09-12
 | P2 Base Segmentation | COMPLETE | frozen as `p2-segmentation-v1`; structural sequence, stage, geometry, overlap/nesting and PIT validation green |
 | P3 Flat Base | COMPLETE | frozen first-pass as `flat-base-v1`; synthetic morphology/PIT validation green; research tightness bands remain subject to P8 labelled validation |
 | P4 Double Bottom | COMPLETE | frozen first-pass as `double-bottom-v1`; geometry/state/fault policy + robustness/PIT validation green |
-| P5 Cup family | IN PROGRESS | P5.1 theory audit complete; shared cup geometry formalization next |
-| P6 Advanced patterns | NOT STARTED | Ascending Base / Base-on-Base |
+| P5 Cup family | COMPLETE | frozen first-pass as `cup-family-v1`; shared Cup body + Handle + Cup/CWH family classification green |
+| P6 Advanced patterns | IN PROGRESS | Ascending Base / Base-on-Base specification next |
 | P7 Fault/ambiguity layer | NOT STARTED | cross-pattern wide/loose, V-shape, malformed/incomplete etc. |
 | P8 Labelled morphology validation | NOT STARTED | authoritative/human-labelled corpus later required |
 | P9 Productionization | NOT STARTED | output schema/versioning/batch runner later |
@@ -34,6 +34,25 @@ Documented in `docs/p3-flat-base-contract-v1.md`.
 ### P4 — `double-bottom-v1`
 Documented in `docs/p4-double-bottom-contract-v1.md`.
 
+### P5 — `cup-family-v1`
+Documented in `docs/p5-cup-family-contract-v1.md`.
+
+Frozen first-pass P5 semantics include:
+
+- shared Cup body before Handle classification;
+- Cup body sequence `left_rim -> trough -> right_rim`;
+- Cup-without-handle minimum body duration 30 observed sessions;
+- normal maximum Cup depth 33%;
+- explicit roundedness descriptors and U/V/W/flat/loose synthetic fixtures;
+- Handle sequence `right_rim -> handle_low -> handle_recovery`;
+- Handle minimum duration 5 sessions;
+- Handle must remain in upper half of Cup;
+- normal Handle depth up to 12%, deeper cases ambiguous/exceptional;
+- no Handle absence inference from a truncated right edge;
+- family outputs `CUP_WITH_HANDLE`, `CUP_NO_HANDLE`, `CUP_HANDLE_AMBIGUOUS`, `CUP_FAMILY_INCOMPLETE`, `NOT_A_RECOGNIZED_CUP`.
+
+Research-only roundedness/continuity/recovery bands remain subject to P8 labelled validation and cannot be tuned from returns.
+
 ## Frozen data-consumption decisions
 
 - upstream source of truth: `azharmz/ussy-data`;
@@ -44,48 +63,35 @@ Documented in `docs/p4-double-bottom-contract-v1.md`.
 - structural morphology/pivots use raw OHLC under current spec;
 - historical evaluation receives only rows where `date <= asof_date`.
 
-## P5 — Cup family active objective
+## P6 — Advanced patterns active objective
 
-Draft specification: `docs/p5-cup-family-spec-draft.md`.
+P6 covers the remaining advanced O'Neil base structures required by the parent contract, beginning with:
 
-Shared Cup morphology must be frozen before handle classification. P5 must distinguish a rounded U-like cup from V-shape, W/Double Bottom, Flat Base and wide/loose structures using existing P1/P2 primitives.
+- Ascending Base
+- Base-on-Base
 
-### P5.1 audited theory guidance
+P6 must compose frozen P1/P2/P3/P4/P5 primitives rather than inventing a parallel landmark or base engine.
 
-Official IBD material supports:
+### P6 checklist
 
-- Cup with Handle minimum base duration: **7 weeks**;
-- typical cup depth: approximately **12% to 33%**;
-- cup visual character: **U-shaped / teacup-like**, not a sharp V;
-- Cup without Handle minimum duration: **6 weeks**;
-- Cup without Handle normal maximum depth: **33%**;
-- handle minimum duration: **5 trading sessions / 1 week**;
-- proper handle forms in the **upper half of the cup**;
-- normal handle depth commonly **8% to 12%**.
-
-No canonical numeric roundedness threshold was found. Roundedness/V-shape discrimination therefore remains morphology research and must be validated from labelled shape evidence, never returns.
-
-### P5 checklist
-
-- **5.1 Theory audit: cup duration/depth/roundedness + handle guidance** — COMPLETE
-- **5.2 Shared cup geometry formalization** — NEXT
-- 5.3 U/V/W/flat/loose fixture corpus — NOT STARTED
-- 5.4 Cup body detector/state/fault policy — NOT STARTED
-- 5.5 Cup body morphology/PIT validation — NOT STARTED
-- 5.6 Handle segmentation + family classification — NOT STARTED
-- 5.7 Cup family first-pass freeze — NOT STARTED
+- **6.1 Theory audit + morphology specification for Ascending Base** — NEXT
+- 6.2 Ascending Base geometry + fixtures — NOT STARTED
+- 6.3 Ascending Base detector/validation — NOT STARTED
+- 6.4 Theory audit + morphology specification for Base-on-Base — NOT STARTED
+- 6.5 Base-on-Base relation detector + fixtures — NOT STARTED
+- 6.6 Advanced patterns first-pass freeze — NOT STARTED
 
 ## Hard constraints
 
 - no future bars or backdated confirmation;
 - no trading-return-based detector tuning;
 - no universal fixed duration assumption across pattern families;
-- no direct CWH detector before shared Cup body semantics;
+- no direct CWH detector before shared Cup body semantics (now enforced by frozen P5 contract);
 - no CAN SLIM eligibility, entry optimization, portfolio, or sell logic in #33.
 
 ## Next work
 
-1. P5.2 formalize shared Cup body geometry over existing P1/P2 structure.
-2. Compute duration, depth, decline/recovery timing, rim relation and bottom-region descriptors.
-3. Build synthetic U/V/W/flat/loose fixtures before roundedness thresholding.
-4. Freeze shared Cup body semantics before handle classification.
+1. Audit O'Neil/IBD guidance for Ascending Base structure and duration/depth semantics.
+2. Translate Ascending Base into composition of confirmed P1/P2 turns rather than a new swing detector.
+3. Build positive/negative/ambiguous synthetic fixtures before freezing any research-only spacing/slope bands.
+4. Then repeat theory-first treatment for Base-on-Base using P2 overlap/nesting relations and frozen lower-level morphology outputs.
