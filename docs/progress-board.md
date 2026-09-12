@@ -12,7 +12,7 @@ Last updated: 2026-09-12
 | PIT-safe data reader | COMPLETE | manifest/checksum/schema validation + explicit `asof_date` cutoff |
 | P1 Structural Landmark Engine | COMPLETE | frozen as `p1-landmark-v1` |
 | P2 Base Segmentation | COMPLETE | frozen as `p2-segmentation-v1`; structural sequence, stage, geometry, overlap/nesting and PIT validation green |
-| P3 Flat Base | IN PROGRESS | P3.1 theory morphology defined; P3.2 detector v0 green; P3.3 fixture corpus green; P3.4 ambiguity/fault policy implemented |
+| P3 Flat Base | IN PROGRESS | P3.1 theory morphology defined; P3.2 detector v0 green; P3.3 fixture corpus green; P3.4 ambiguity/fault policy green; P3.5 validation implemented and awaiting CI |
 | P4 Double Bottom | NOT STARTED | follows Flat Base first pass |
 | P5 Cup family | NOT STARTED | shared cup morphology before handle classifier |
 | P6 Advanced patterns | NOT STARTED | Ascending Base / Base-on-Base |
@@ -102,6 +102,19 @@ Current synthetic Flat Base corpus:
 - `wide_loose` — negative despite passing hard duration/depth gates;
 - `borderline_tightness` — deliberately ambiguous.
 
+### P3.5 synthetic morphology/PIT validation
+
+Documented in `docs/p3-flat-base-validation.md`.
+
+Implemented validation guards include:
+
+- appending arbitrary future bars outside the frozen P2 structural window must not change an existing Flat Base assessment;
+- the clear `textbook_tight` positive must remain recognized under small +/-0.1% uniform price-scale perturbations;
+- the clear `wide_loose` negative must remain rejected under the same perturbations;
+- the full synthetic corpus must map to its preregistered recognized/rejected/ambiguous states.
+
+These checks validate implementation stability, not the authority of the research-only tightness bands. Authoritative/human-labelled morphology validation remains a later P8 requirement.
+
 No breakout or entry logic belongs in this phase.
 
 ## Hard constraints
@@ -114,8 +127,7 @@ No breakout or entry logic belongs in this phase.
 
 ## Next work
 
-1. Verify P3.4 ambiguity/fault policy in CI.
-2. P3.5 perform morphology/PIT validation of `flat-base-v0.1`.
-3. Add parameter-neighborhood checks around the research tightness bands without using returns.
-4. Decide whether the policy is stable enough to freeze as the first Flat Base contract or remains research-only pending authoritative/human-labelled examples.
-5. Move to Double Bottom only after the Flat Base first-pass contract has an explicit validation verdict.
+1. Verify P3.5 morphology/PIT validation in CI.
+2. If green, issue an explicit P3 first-pass validation verdict.
+3. Freeze only the Flat Base output/state contract that is defensible now; keep 3%/1% and 7%/3% tightness bands marked research-only pending P8 labelled validation.
+4. Then begin P4 Double Bottom morphology research/specification.
