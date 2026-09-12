@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import date
-from typing import Iterable
 
 import pandas as pd
 
@@ -26,12 +25,7 @@ def _to_date(value) -> date:
 
 
 def extract_excursion_landmarks(frame: pd.DataFrame, params: ExcursionParams | None = None) -> list[Landmark]:
-    """Extract alternating price extrema using causal percentage reversals.
-
-    A peak/trough is confirmed only when a later bar moves far enough in the
-    opposite direction. The landmark therefore preserves both the price date
-    and the later confirmation date.
-    """
+    """Extract alternating structural extrema using causal percentage reversals."""
     params = params or ExcursionParams()
     required = {"date", "high", "low"}
     if not required.issubset(frame.columns):
@@ -60,7 +54,7 @@ def extract_excursion_landmarks(frame: pd.DataFrame, params: ExcursionParams | N
             if decline >= params.reversal_pct and i - peak_idx >= params.min_separation_sessions:
                 landmarks.append(
                     Landmark(
-                        type=LandmarkType.LEFT_PEAK,
+                        type=LandmarkType.SWING_HIGH,
                         price=peak_price,
                         price_date=_to_date(data.loc[peak_idx, "date"]),
                         confirmed_date=_to_date(data.loc[i, "date"]),
@@ -77,7 +71,7 @@ def extract_excursion_landmarks(frame: pd.DataFrame, params: ExcursionParams | N
             if advance >= params.reversal_pct and i - trough_idx >= params.min_separation_sessions:
                 landmarks.append(
                     Landmark(
-                        type=LandmarkType.TROUGH_1,
+                        type=LandmarkType.SWING_LOW,
                         price=trough_price,
                         price_date=_to_date(data.loc[trough_idx, "date"]),
                         confirmed_date=_to_date(data.loc[i, "date"]),
