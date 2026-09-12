@@ -9,7 +9,7 @@ from oneil_patterns.morphology.cup_family import HandleGeometry
 from oneil_patterns.morphology.double_bottom import DoubleBottomGeometry
 from oneil_patterns.segmentation.model import BaseSegmentCandidate
 
-PIVOT_ADAPTER_VERSION = "p8-pivot-adapter-v0.1"
+PIVOT_ADAPTER_VERSION = "p8-pivot-adapter-v0.2"
 
 
 class PivotEvaluationState(str, Enum):
@@ -76,22 +76,19 @@ def cup_without_handle_pivot(geometry: CupBodyGeometry) -> PivotFact:
 
 
 def cup_with_handle_pivot(geometry: CupBodyGeometry, handle: HandleGeometry) -> PivotFact:
-    """Fail closed until the native detector persists the handle high explicitly.
+    """#32 mapping: CWH pivot = highest price in the valid handle.
 
-    #32 freezes CWH pivot as the highest price in the valid handle. The current
-    canonical HandleGeometry retains only handle_low and handle_recovery, while
-    cup.right_rim belongs to the cup body. Treating recovery as the pivot would
-    silently infer a missing handle-high landmark and can leak breakout-side
-    information. P8 must therefore remain NOT_EVALUABLE until handle-high
-    persistence is added under a versioned morphology contract.
+    Under the current landmark-first native sequence, `handle.handle_high` is the
+    persisted role of the cup right-rim swing high immediately preceding the
+    handle pullback. The adapter consumes that explicit role and never substitutes
+    the later handle recovery or an authoritative label value.
     """
-    _ = (geometry, handle)
-    return PivotFact(
-        pattern="CUP_WITH_HANDLE",
-        state=PivotEvaluationState.NOT_EVALUABLE,
-        pivot_level=None,
-        pivot_source_date=None,
-        pivot_landmark_type=None,
-        definition_version=PIVOT_ADAPTER_VERSION,
-        reason="HANDLE_HIGH_NOT_PERSISTED",
+    if handle.handle_high != geometry.right_rim:
+        raise ValueError("current CWH contract requires handle_high to equal cup right_rim")
+    return _fact(
+        "CUP_WITH_HANDLE",
+        handle.handle_high.price,
+        handle.handle_high.price_date,
+        "HANDLE_HIGH",
+        "frozen #32 pivot mapping: highest price in valid handle",
     )
