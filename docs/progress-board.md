@@ -17,7 +17,7 @@ Last updated: 2026-09-12
 | Landmark evaluation harness | COMPLETE FOR P1 | repaint/PIT, missed/false/date error, perturbation robustness |
 | Boundary-artifact treatment | COMPLETE | explicit edge classification retained as evidence |
 | Landmark fusion policy | COMPLETE | primary excursion skeleton; auxiliary corroboration only; no naive union |
-| P2 Base segmentation | IN PROGRESS | segment model bootstrapped; structural high → trough → recovery logic next |
+| P2 Base segmentation | IN PROGRESS | P2.1 structural sequence segmentation green; P2.2 explicit boundary stages implemented |
 | Flat Base | NOT STARTED | follows P2 |
 | Double Bottom | NOT STARTED | follows P2 |
 | Cup family | NOT STARTED | shared cup morphology before handle classifier |
@@ -55,12 +55,22 @@ Key rules:
 
 P2 converts the frozen P1 structural-turn sequence into provisional candidate base regions without assigning a pattern class yet.
 
-The first region vocabulary is:
+Current region vocabulary:
 
-1. structural high / candidate base start;
-2. subsequent decline / trough;
-3. recovery high if confirmed;
-4. provisional base end / open-ended status as appropriate.
+1. structural `SWING_HIGH` = candidate start;
+2. subsequent `SWING_LOW` = trough;
+3. optional later confirmed `SWING_HIGH` = recovery;
+4. explicit segment stage records whether only the decline is known or a recovery turn is also known.
+
+### P2 boundary semantics
+
+Documented in `docs/p2-boundary-semantics.md`.
+
+- `start_date` is always the starting structural high `price_date`;
+- `DECLINE_CONFIRMED`: no PIT-known recovery yet, so `end_date = trough.price_date`;
+- `RECOVERY_CONFIRMED`: recovery is PIT-known, so `end_date = recovery.price_date`;
+- `asof_date` is only an information cutoff and never becomes a structural boundary;
+- an incomplete segment does not mechanically grow merely because the observation horizon advances.
 
 P2 outputs descriptive geometry such as duration, depth, recovery, overlap/nesting evidence, and PIT-safe confirmation dates. Flat Base, Double Bottom, Cup, etc. are later morphology interpretations of these candidate regions.
 
@@ -74,8 +84,7 @@ P2 outputs descriptive geometry such as duration, depth, recovery, overlap/nesti
 
 ## Next work
 
-1. Implement P2 structural sequence segmentation from confirmed `LandmarkCandidate` objects.
-2. Define candidate start/end and incomplete/open-base semantics.
-3. Compute duration, depth, and recovery features.
-4. Add nested/overlapping candidate handling.
-5. Validate P2 prefix/PIT stability before starting Flat Base / Double Bottom detectors.
+1. Verify P2.2 explicit stage/boundary tests in CI.
+2. Formalize P2.3 duration/depth/recovery feature semantics, including recovery relative to start high.
+3. Add nested/overlapping candidate handling.
+4. Validate P2 prefix/PIT stability before starting Flat Base / Double Bottom detectors.
