@@ -17,7 +17,7 @@ Last updated: 2026-09-12
 | P5 Cup family | COMPLETE | frozen first-pass as `cup-family-v1` |
 | P6 Advanced patterns | COMPLETE | frozen first-pass as `advanced-patterns-v1` |
 | P7 Fault/ambiguity layer | COMPLETE | frozen as `fault-ambiguity-v1` |
-| P8 Labelled morphology validation | BLOCKED_ON_CORPUS | validation infrastructure green; authoritative corpus acquisition plan now active |
+| P8 Labelled morphology validation | CORPUS_ACQUISITION | 31 authoritative reference candidates committed; adjudication/OHLCV resolution required before executable labels |
 | P9 Productionization | COMPLETE | frozen as `production-v1`; deterministic PIT-safe production engine/orchestrator green |
 
 ## Frozen contracts
@@ -37,21 +37,35 @@ Detailed status: `docs/p8-labelled-validation-status.md`.
 
 Corpus acquisition plan: `docs/p8-corpus-acquisition-plan.md`.
 
+OHLCV routing policy: `docs/p8-ohlcv-source-policy.md`.
+
+Reference candidate registry: `data/p8/reference_candidates_v0.csv`.
+
 Complete:
 
 - 8.1 label/evidence/provenance schema;
 - 8.2 corpus split/leakage contract;
 - 8.3 evaluation metrics + disagreement ids;
 - repository audit for existing independent labels;
-- acquisition protocol for 30–50 initial authoritative/human-labelled examples.
+- acquisition protocol for 30–50 initial authoritative/human-labelled examples;
+- 31 reference-first authoritative candidates collected across Flat Base, Double Bottom, Cup-with-Handle, Cup-without-Handle, Ascending Base and Base-on-Base;
+- explicit R2-vs-external OHLCV routing policy, including delisted/non-universe securities.
 
-Blocked pending real corpus:
+Current acquisition/adjudication work:
+
+- verify each source remains explicit enough for authoritative promotion;
+- freeze conservative pattern windows without looking at detector output;
+- resolve each example to canonical R2 or a documented external OHLCV source;
+- freeze DEVELOPMENT / VALIDATION split before detector agreement is inspected;
+- promote eligible candidates into executable `LabelEvidence` records.
+
+Blocked pending executable labelled corpus:
 
 - 8.4 run frozen detectors against real labelled corpus;
 - 8.5 morphology-only threshold verdicts (`KEEP` / `REVISE` / `UNRESOLVED`);
 - 8.6 final labelled-validation freeze.
 
-Reason: no independent authoritative/human-labelled corpus is committed yet. Synthetic fixtures remain regression tests and are intentionally ineligible as P8 evidence.
+Synthetic fixtures remain regression tests and are intentionally ineligible as P8 evidence.
 
 ## Frozen data-consumption decisions
 
@@ -85,7 +99,7 @@ First-pass verdict:
 - output schema: `oneil-pattern-output-v1`;
 - engine version: `33-first-pass-v1`;
 - production contract: `production-v1`;
-- every run/record preserves `P8_BLOCKED_ON_CORPUS` until P8 is resolved;
+- every run/record preserves `P8_BLOCKED_ON_CORPUS` until executable P8 labelled validation is resolved;
 - stable assessment IDs use semantic SHA-256 identity fields;
 - canonical R2 ready reader enforces checksum/schema/PIT cutoff;
 - orchestrator composes frozen P1–P7 semantics rather than inventing parallel detectors;
@@ -103,11 +117,12 @@ First-pass verdict:
 
 ## Next work
 
-P9 is closed. The active workstream returns to P8:
+P9 is closed. The active workstream is P8 corpus adjudication:
 
-1. collect 30–50 independent authoritative/human-labelled real-world examples;
-2. prioritize explicit IBD/O'Neil pattern labels and preserve source references;
-3. assign DEVELOPMENT / VALIDATION split before inspecting detector agreement;
-4. run frozen `production-v1` / detector contracts against the corpus;
-5. issue morphology-only `KEEP` / `REVISE` / `UNRESOLVED` verdicts;
-6. freeze P8 only after untouched validation examples are evaluated.
+1. expand/clean the 31-candidate registry toward 50+ where authoritative supply allows;
+2. adjudicate exact source-grounded windows and discard/mark ambiguous weak candidates;
+3. resolve OHLCV per example: R2 when available, external historical data otherwise;
+4. assign DEVELOPMENT / VALIDATION split before inspecting detector agreement;
+5. promote executable `LabelEvidence` records and run frozen detectors;
+6. issue morphology-only `KEEP` / `REVISE` / `UNRESOLVED` verdicts;
+7. freeze P8 only after untouched validation examples are evaluated.
