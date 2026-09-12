@@ -1,6 +1,14 @@
 # #33 Progress Board
 
-Last updated: 2026-09-12
+Last updated: 2026-09-13
+
+## Source-of-truth boundary
+
+`azharmz/ussy-oneil-patterns` is the canonical implementation repository for #33, including P8 morphology validation.
+
+`azharmz/ussy-canslim-research` is the parent/HQ repository. It owns the frozen #32 upstream contract, the CAN SLIM roadmap, and later #34 consumption of frozen #33 output. It must not continue a parallel #33 detector/evaluator implementation.
+
+Cross-repo reconciliation decision: `docs/decisions/2026-09-13-p8-cross-repo-reconciliation.md`.
 
 ## Project state
 
@@ -17,8 +25,8 @@ Last updated: 2026-09-12
 | P5 Cup family | COMPLETE | frozen first-pass as `cup-family-v1` |
 | P6 Advanced patterns | COMPLETE | frozen first-pass as `advanced-patterns-v1` |
 | P7 Fault/ambiguity layer | COMPLETE | frozen as `fault-ambiguity-v1` |
-| P8 Labelled morphology validation | LABELLED_CORPUS_IN_PROGRESS | 31 authoritative candidates; first 2 executable authoritative LabelEvidence records committed and schema-valid |
-| P9 Productionization | COMPLETE | frozen as `production-v1`; deterministic PIT-safe production engine/orchestrator green |
+| P8 Labelled morphology validation | **DEVELOPMENT_RECONCILIATION_IN_PROGRESS** | 31 reference candidates; canonical corpus now 5 DEVELOPMENT + 1 locked VALIDATION; parent-side 5 MATCH / 5 AMBIGUOUS must be re-executed canonically before verdict |
+| P9 Productionization | COMPLETE | frozen as `production-v1`; deterministic PIT-safe production engine/orchestrator green, still marked with P8 validation debt |
 
 ## Frozen contracts
 
@@ -43,32 +51,62 @@ Reference candidate registry: `data/p8/reference_candidates_v0.csv`.
 
 Executable label corpus: `data/p8/labels_v0.csv`.
 
-Complete:
+### Completed P8 infrastructure
 
 - 8.1 label/evidence/provenance schema;
 - 8.2 corpus split/leakage contract;
 - 8.3 evaluation metrics + disagreement ids;
-- repository audit for existing independent labels;
+- repository audit for independent labels;
 - acquisition protocol for 30–50 initial authoritative/human-labelled examples;
 - 31 reference-first authoritative candidates collected across Flat Base, Double Bottom, Cup-with-Handle, Cup-without-Handle, Ascending Base and Base-on-Base;
 - explicit R2-vs-external OHLCV routing policy, including delisted/non-universe securities;
-- first authoritative adjudication batch completed;
-- 2 executable authoritative labels committed and validated against frozen `LabelEvidence` schema: SNPS Flat Base (DEVELOPMENT) and NFLX Cup With Handle (VALIDATION).
+- strict source routing with fallback only on source unavailability;
+- source-anchor adjudication rules;
+- first authoritative adjudication batch;
+- canonical label schema now supports source precision (`DAY` / `MONTH`), optional source dimensions, explicit authoritative pivot fields, and explicit split/corporate-action comparison factors without mutating source prices.
 
-Current acquisition/adjudication work:
+### Canonical authoritative corpus
 
-- continue exact-window adjudication for the remaining high-priority candidates;
-- resolve each example to canonical R2 or a documented external OHLCV source;
-- expand DEVELOPMENT coverage before interpreting detector disagreement;
-- keep the committed VALIDATION example untouched until any revised detector version is frozen;
-- promote only source-grounded cases; ambiguous/coarse-window candidates remain held back.
+| Example | Split | Pattern | Source precision / dimensions | Canonical execution status |
+|---|---|---|---|---|
+| SNPS (`p8-label-0001`) | DEVELOPMENT | FLAT_BASE | DAY start/end + pivot date/price | pending canonical re-execution in reconciliation branch |
+| CTSH (`p8-label-0003`) | DEVELOPMENT | CUP_WITH_HANDLE | MONTH start + pivot price; explicit factor 4 comparison normalization | pending canonical re-execution |
+| FOUR (`p8-label-0004`) | DEVELOPMENT | CUP_WITH_HANDLE | MONTH start + pivot price | pending canonical re-execution |
+| SEI (`p8-label-0005`) | DEVELOPMENT | DOUBLE_BOTTOM | MONTH start + pivot price | pending canonical re-execution |
+| AMZN (`p8-label-0006`) | DEVELOPMENT | CUP_WITHOUT_HANDLE | MONTH start + pivot price | pending canonical re-execution |
+| NFLX (`p8-label-0002`) | VALIDATION | CUP_WITH_HANDLE | DAY start/end | **LOCKED / UNTOUCHED** |
 
-P8.4 status:
+Initial coverage now spans all four implemented core pattern families. This is **coverage**, not a P8 verdict.
 
-- DEVELOPMENT-side detector execution is now eligible as soon as OHLCV is resolved for committed development labels;
-- final validation execution remains pending broader coverage and a frozen post-development detector version;
-- 8.5 morphology-only threshold verdicts (`KEEP` / `REVISE` / `UNRESOLVED`) remain pending;
-- 8.6 final labelled-validation freeze remains pending.
+### Parent-branch migration evidence
+
+Before reconciliation, the parallel parent implementation reported:
+
+```text
+source-dimension agreement:
+  MATCH = 5
+matched detector evidence state:
+  AMBIGUOUS = 5
+joint state:
+  MATCH:AMBIGUOUS = 5
+```
+
+Those results are preserved as migration evidence only. They are not adopted as canonical #33 findings until the same five DEVELOPMENT labels are run through the canonical oneil landmark-first stack.
+
+Unresolved bands carried forward from that evidence:
+
+- Double Bottom second-trough undercut semantics (SEI);
+- CWH handle-fault semantics (FOUR);
+- Cup-family hierarchy / CWH-vs-Cup-without-Handle ambiguity (AMZN);
+- general ambiguity rate: 5/5 parent-side source matches were still ambiguous;
+- parent `base_id` / lineage churn after pivot correction was material, so those parent-specific identity semantics are not imported as a frozen oneil contract.
+
+### P8.4 / P8.5 / P8.6 status
+
+- P8.4 DEVELOPMENT execution: **NEXT — canonical re-execution of the five migrated DEVELOPMENT labels**;
+- P8.5 morphology-only `KEEP` / `REVISE` / `UNRESOLVED`: pending canonical disagreement evidence;
+- P8.6 final labelled-validation freeze: pending;
+- VALIDATION execution: locked until revised DEVELOPMENT semantics are frozen.
 
 Synthetic fixtures remain regression tests and are intentionally ineligible as P8 evidence.
 
@@ -80,7 +118,9 @@ Synthetic fixtures remain regression tests and are intentionally ineligible as P
 - upstream Yahoo ingestion uses `auto_adjust=False`;
 - raw OHLC and `adj_close` remain distinct;
 - structural morphology/pivots use raw OHLC under current spec;
-- historical evaluation receives only rows where `date <= asof_date`.
+- historical evaluation receives only rows where `date <= asof_date`;
+- external P8 routing priority remains R2 -> Yahoo/yfinance -> Tiingo -> other documented provider;
+- fallback is allowed only on genuine source unavailability, not to escape auth/schema/QC failures or improve morphology agreement.
 
 ## P9 — Productionization freeze
 
@@ -104,7 +144,7 @@ First-pass verdict:
 - output schema: `oneil-pattern-output-v1`;
 - engine version: `33-first-pass-v1`;
 - production contract: `production-v1`;
-- every run/record currently preserves the frozen first-pass validation-debt marker until P8 is resolved;
+- every run/record preserves the first-pass validation-debt marker until P8 is resolved;
 - stable assessment IDs use semantic SHA-256 identity fields;
 - canonical R2 ready reader enforces checksum/schema/PIT cutoff;
 - orchestrator composes frozen P1–P7 semantics rather than inventing parallel detectors;
@@ -117,17 +157,22 @@ First-pass verdict:
 - no future bars or backdated confirmation;
 - no trading-return-based detector tuning;
 - no fabricated authoritative labels;
+- no source boundary/precision may be reverse-engineered from detector output;
 - no production output may imply research-only thresholds are P8-validated;
-- no CAN SLIM eligibility, entry optimization, portfolio, or sell logic in #33.
+- no CAN SLIM eligibility, entry optimization, portfolio, or sell logic in #33;
+- NFLX VALIDATION must remain untouched until DEVELOPMENT semantics freeze;
+- #34 must not start until P8/#33 has a defensible final verdict.
 
 ## Next work
 
-P9 is closed. The active workstream is P8 labelled-corpus build and development-side validation:
+The active workstream is **P8 canonical reconciliation and DEVELOPMENT morphology validation**:
 
-1. adjudicate more P0/P1 candidates into exact source-grounded windows;
-2. resolve OHLCV per promoted example: R2 when available, external historical data otherwise;
-3. expand DEVELOPMENT labels toward enough coverage per pattern;
-4. run frozen detectors on DEVELOPMENT labels only;
-5. issue morphology-only `KEEP` / `REVISE` / `UNRESOLVED` verdicts and version any revisions;
-6. evaluate untouched VALIDATION labels once against the revised frozen version;
-7. freeze P8 only after coverage gaps and disagreement cases are documented.
+1. make the migrated schema/corpus green in canonical oneil CI;
+2. add a canonical source-dimension evaluator/adapter against oneil detector outputs without importing the parent detector stack;
+3. execute the five DEVELOPMENT labels only;
+4. classify every disagreement as source precision, corporate-action normalization, morphology, ambiguity/conflict, or evaluator semantics;
+5. issue morphology-only `KEEP` / `REVISE` / `UNRESOLVED` decisions and version any justified revisions;
+6. expand targeted DEVELOPMENT evidence where unresolved bands need more examples;
+7. freeze detector semantics only after canonical DEVELOPMENT evidence is defensible;
+8. open NFLX VALIDATION exactly once after freeze;
+9. freeze P8/#33, update parent #33 pointer, then allow #34 to begin.
