@@ -39,6 +39,14 @@ In particular:
 - AMZN Cup No Handle: source gives month-level start and breakout week; exact start requires adjudication;
 - STT/NAVN/MRX Ascending Base: source labels are explicit, but exact three-pullback landmark dates still need resolution.
 
+## 2026-09-13 follow-up: calendar convention frozen
+
+`docs/p8-source-anchor-adjudication-v0.md` now freezes how a source-stated week/month/date range may be resolved to a trading session without consulting detector output. The implementation is `src/oneil_patterns/validation/adjudication.py`.
+
+This removes the methodological blocker for candidates whose source supplies enough structural semantics (for example, a named peak/reversal range or a stated pivot plus breakout week). It does **not** automatically promote month-only candidates: where the source still does not justify a structural selection rule, the example remains held back.
+
+Next adjudication batches should apply this convention using OHLCV obtained only through the frozen P8 router and record the rule/range used in label metadata or rationale.
+
 ## Scientific status
 
 This batch changes P8 from “no real corpus exists” to “real corpus construction has begun.” It does **not** constitute sufficient sample size for morphology validation, threshold revision, or a P8 freeze. The untouched validation example must not be used for threshold tuning.
