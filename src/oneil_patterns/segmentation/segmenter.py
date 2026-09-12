@@ -6,7 +6,7 @@ import pandas as pd
 
 from oneil_patterns.landmarks.candidate import LandmarkCandidate
 from oneil_patterns.landmarks.model import LandmarkType
-from .model import BaseSegmentCandidate
+from .model import BaseSegmentCandidate, SegmentStage
 
 
 def _session_index(frame: pd.DataFrame) -> dict[date, int]:
@@ -58,10 +58,17 @@ def _build_segment(
     if confirmed > asof_date:
         raise ValueError("segment uses landmark not known as of asof_date")
 
+    stage = (
+        SegmentStage.RECOVERY_CONFIRMED
+        if recovery is not None
+        else SegmentStage.DECLINE_CONFIRMED
+    )
+
     return BaseSegmentCandidate(
         start=start,
         trough=trough,
         recovery=recovery,
+        stage=stage,
         start_date=start.price_date,
         end_date=end_mark.price_date,
         confirmed_date=confirmed,
@@ -74,6 +81,7 @@ def _build_segment(
             "start_boundary": start.boundary,
             "trough_boundary": trough.boundary,
             "recovery_boundary": recovery.boundary if recovery is not None else None,
+            "boundary_semantics": "structural_landmark_dates_not_asof_horizon",
         },
     )
 
@@ -86,8 +94,9 @@ def segment_base_candidates(
 ) -> list[BaseSegmentCandidate]:
     """Create morphology-neutral high -> low -> recovery base candidates.
 
-    Only frozen P1 candidates confirmed by ``asof_date`` participate.  P2 does
-    not discover new extrema and does not assign Flat/DB/Cup labels.
+    Only frozen P1 candidates confirmed by ``asof_date`` participate. P2 does
+    not discover new extrema and does not assign Flat/DB/Cup labels. `asof_date`
+    is an information cutoff only; it never becomes a structural segment edge.
     """
     index = _session_index(frame)
     known = [
