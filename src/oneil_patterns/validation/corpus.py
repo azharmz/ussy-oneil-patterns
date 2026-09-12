@@ -9,12 +9,23 @@ from .labels import (
     LabelEvidence,
     LabelProvenance,
     LabelValue,
+    SourcePrecision,
     validate_corpus,
 )
 
 
+def _optional_date(value: str | None) -> date | None:
+    text = (value or "").strip()
+    return date.fromisoformat(text) if text else None
+
+
+def _optional_float(value: str | None) -> float | None:
+    text = (value or "").strip()
+    return float(text) if text else None
+
+
 def load_label_corpus_csv(path: str | Path) -> list[LabelEvidence]:
-    """Load committed real-world labels into the frozen LabelEvidence schema."""
+    """Load committed real-world labels without inventing absent source dimensions."""
     items: list[LabelEvidence] = []
     with Path(path).open("r", encoding="utf-8", newline="") as handle:
         reader = csv.DictReader(handle)
@@ -24,8 +35,12 @@ def load_label_corpus_csv(path: str | Path) -> list[LabelEvidence]:
             "pattern",
             "label",
             "window_start",
+            "window_start_precision",
             "window_end",
             "asof_date",
+            "expected_pivot_source_date",
+            "expected_pivot_level",
+            "pivot_price_adjustment_factor",
             "provenance",
             "source_name",
             "source_reference",
@@ -45,8 +60,12 @@ def load_label_corpus_csv(path: str | Path) -> list[LabelEvidence]:
                     pattern=row["pattern"].strip(),
                     label=LabelValue(row["label"].strip()),
                     window_start=date.fromisoformat(row["window_start"].strip()),
-                    window_end=date.fromisoformat(row["window_end"].strip()),
+                    window_start_precision=SourcePrecision(row["window_start_precision"].strip()),
+                    window_end=_optional_date(row.get("window_end")),
                     asof_date=date.fromisoformat(row["asof_date"].strip()),
+                    expected_pivot_source_date=_optional_date(row.get("expected_pivot_source_date")),
+                    expected_pivot_level=_optional_float(row.get("expected_pivot_level")),
+                    pivot_price_adjustment_factor=float((row.get("pivot_price_adjustment_factor") or "1").strip() or "1"),
                     provenance=LabelProvenance(row["provenance"].strip()),
                     source_name=row["source_name"].strip(),
                     source_reference=row["source_reference"].strip(),
