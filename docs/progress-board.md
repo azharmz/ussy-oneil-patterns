@@ -14,7 +14,7 @@ Last updated: 2026-09-12
 | P2 Base Segmentation | COMPLETE | frozen as `p2-segmentation-v1`; structural sequence, stage, geometry, overlap/nesting and PIT validation green |
 | P3 Flat Base | COMPLETE | frozen first-pass as `flat-base-v1`; synthetic morphology/PIT validation green; research tightness bands remain subject to P8 labelled validation |
 | P4 Double Bottom | COMPLETE | frozen first-pass as `double-bottom-v1`; geometry/state/fault policy + robustness/PIT validation green |
-| P5 Cup family | IN PROGRESS | shared cup morphology specification opened; theory audit next |
+| P5 Cup family | IN PROGRESS | P5.1 theory audit complete; shared cup geometry formalization next |
 | P6 Advanced patterns | NOT STARTED | Ascending Base / Base-on-Base |
 | P7 Fault/ambiguity layer | NOT STARTED | cross-pattern wide/loose, V-shape, malformed/incomplete etc. |
 | P8 Labelled morphology validation | NOT STARTED | authoritative/human-labelled corpus later required |
@@ -23,34 +23,16 @@ Last updated: 2026-09-12
 ## Frozen contracts
 
 ### P1 — `p1-landmark-v1`
-
 Documented in `docs/p1-landmark-contract-v1.md`.
 
 ### P2 — `p2-segmentation-v1`
-
 Documented in `docs/p2-segmentation-contract-v1.md`.
 
 ### P3 — `flat-base-v1`
-
 Documented in `docs/p3-flat-base-contract-v1.md`.
 
 ### P4 — `double-bottom-v1`
-
 Documented in `docs/p4-double-bottom-contract-v1.md`.
-
-Frozen first-pass Double Bottom semantics include:
-
-- structural sequence `left_high -> trough_1 -> middle_peak -> trough_2 -> optional right_recovery_high`;
-- core-W duration boundary `left_high -> trough_2`;
-- minimum duration 35 observed sessions;
-- maximum depth 40%;
-- canonical trough 2 undercuts trough 1;
-- states `RECOGNIZED`, `REJECTED`, `AMBIGUOUS`;
-- hard faults `TOO_SHORT`, `TOO_DEEP`, `NO_SECOND_TROUGH_UNDERCUT`;
-- research-only ambiguity faults `SHALLOW_UNDERCUT`, `WEAK_MIDDLE_REBOUND`;
-- optional right recovery enriches evidence but does not rewrite core-W duration/classification.
-
-Synthetic robustness/PIT validation is green. P8 remains responsible for authoritative/human-labelled validation of research-only undercut magnitude and middle-rebound bands.
 
 ## Frozen data-consumption decisions
 
@@ -68,10 +50,25 @@ Draft specification: `docs/p5-cup-family-spec-draft.md`.
 
 Shared Cup morphology must be frozen before handle classification. P5 must distinguish a rounded U-like cup from V-shape, W/Double Bottom, Flat Base and wide/loose structures using existing P1/P2 primitives.
 
+### P5.1 audited theory guidance
+
+Official IBD material supports:
+
+- Cup with Handle minimum base duration: **7 weeks**;
+- typical cup depth: approximately **12% to 33%**;
+- cup visual character: **U-shaped / teacup-like**, not a sharp V;
+- Cup without Handle minimum duration: **6 weeks**;
+- Cup without Handle normal maximum depth: **33%**;
+- handle minimum duration: **5 trading sessions / 1 week**;
+- proper handle forms in the **upper half of the cup**;
+- normal handle depth commonly **8% to 12%**.
+
+No canonical numeric roundedness threshold was found. Roundedness/V-shape discrimination therefore remains morphology research and must be validated from labelled shape evidence, never returns.
+
 ### P5 checklist
 
-- **5.1 Theory audit: cup duration/depth/roundedness + handle guidance** — NEXT
-- 5.2 Shared cup geometry formalization — NOT STARTED
+- **5.1 Theory audit: cup duration/depth/roundedness + handle guidance** — COMPLETE
+- **5.2 Shared cup geometry formalization** — NEXT
 - 5.3 U/V/W/flat/loose fixture corpus — NOT STARTED
 - 5.4 Cup body detector/state/fault policy — NOT STARTED
 - 5.5 Cup body morphology/PIT validation — NOT STARTED
@@ -88,7 +85,7 @@ Shared Cup morphology must be frozen before handle classification. P5 must disti
 
 ## Next work
 
-1. P5.1 audit official O'Neil/IBD guidance for Cup and Handle duration, depth, roundedness and handle geometry.
-2. Translate only supported guidance into measurable descriptors/threshold candidates.
+1. P5.2 formalize shared Cup body geometry over existing P1/P2 structure.
+2. Compute duration, depth, decline/recovery timing, rim relation and bottom-region descriptors.
 3. Build synthetic U/V/W/flat/loose fixtures before roundedness thresholding.
 4. Freeze shared Cup body semantics before handle classification.
