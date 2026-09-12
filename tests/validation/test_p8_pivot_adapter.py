@@ -103,21 +103,22 @@ def test_cup_without_handle_pivot_is_left_rim():
     assert fact.pivot_landmark_type == "LEFT_RIM"
 
 
-def test_cwh_pivot_fails_closed_until_handle_high_is_persisted():
+def test_cwh_pivot_uses_explicit_persisted_handle_high_role():
     geometry = _cup_geometry()
     handle_low, handle_recovery = _low(110, 22), _high(117, 25)
     handle = HandleGeometry(
+        handle_high=geometry.right_rim,
         handle_low=handle_low,
         handle_recovery=handle_recovery,
         confirmed_date=handle_recovery.confirmed_date,
-        duration_sessions=4,
+        duration_sessions=6,
         depth_pct=(118 - 110) / 118,
         cup_midpoint_price=105,
         low_in_upper_half=True,
         recovery_to_right_rim_ratio=117 / 118,
     )
     fact = cup_with_handle_pivot(geometry, handle)
-    assert fact.state == PivotEvaluationState.NOT_EVALUABLE
-    assert fact.pivot_level is None
-    assert fact.pivot_source_date is None
-    assert fact.reason == "HANDLE_HIGH_NOT_PERSISTED"
+    assert fact.state == PivotEvaluationState.EVALUABLE
+    assert fact.pivot_level == 118
+    assert fact.pivot_source_date == geometry.right_rim.price_date
+    assert fact.pivot_landmark_type == "HANDLE_HIGH"

@@ -16,6 +16,10 @@ NORMAL_MAX_HANDLE_DEPTH_PCT = 0.12
 
 @dataclass(frozen=True, slots=True)
 class HandleGeometry:
+    # Under the current landmark-first sequence, the cup right rim is also the
+    # structural high immediately preceding the handle pullback. Persist that
+    # role explicitly so downstream pivot logic does not have to infer it again.
+    handle_high: LandmarkCandidate
     handle_low: LandmarkCandidate
     handle_recovery: LandmarkCandidate
     confirmed_date: date
@@ -24,6 +28,16 @@ class HandleGeometry:
     cup_midpoint_price: float
     low_in_upper_half: bool
     recovery_to_right_rim_ratio: float
+
+    def __post_init__(self) -> None:
+        if self.handle_high.type != LandmarkType.SWING_HIGH:
+            raise ValueError("handle_high must be SWING_HIGH")
+        if self.handle_low.type != LandmarkType.SWING_LOW:
+            raise ValueError("handle_low must be SWING_LOW")
+        if self.handle_recovery.type != LandmarkType.SWING_HIGH:
+            raise ValueError("handle_recovery must be SWING_HIGH")
+        if not self.handle_high.price_date < self.handle_low.price_date < self.handle_recovery.price_date:
+            raise ValueError("handle landmarks must be high-low-high in chronological order")
 
 
 class HandleState(str, Enum):
@@ -64,29 +78,36 @@ def build_handle_geometry(
     if handle_recovery.type != LandmarkType.SWING_HIGH:
         raise ValueError("handle_recovery must be SWING_HIGH")
 
-    marks = (cup.right_rim, handle_low, handle_recovery)
+    # The existing native sequence is RIGHT_RIM(HIGH) -> HANDLE_LOW(LOW) ->
+    # HANDLE_RECOVERY(HIGH). No additional high is hidden between right rim and
+    # handle low in this landmark representation, so RIGHT_RIM is the persisted
+    # HANDLE_HIGH role for the current contract. This is additive role
+    # persistence; it does not change detector thresholds or rediscover extrema.
+    handle_high = cup.right_rim
+    marks = (handle_high, handle_low, handle_recovery)
     for mark in marks:
         if mark.price_date not in session_index:
             raise ValueError(f"landmark date missing from session index: {mark.price_date}")
 
-    ri, li, hi = (session_index[mark.price_date] for mark in marks)
-    if not ri < li < hi:
+    hi0, li, hi1 = (session_index[mark.price_date] for mark in marks)
+    if not hi0 < li < hi1:
         raise ValueError("handle must occur after right rim in high-low-high order")
-    if handle_low.price >= cup.right_rim.price:
-        raise ValueError("handle low must be below right rim")
+    if handle_low.price >= handle_high.price:
+        raise ValueError("handle low must be below handle high")
 
     cup_midpoint = cup.trough.price + (cup.left_rim.price - cup.trough.price) / 2.0
-    depth = (cup.right_rim.price - handle_low.price) / cup.right_rim.price
+    depth = (handle_high.price - handle_low.price) / handle_high.price
 
     return HandleGeometry(
+        handle_high=handle_high,
         handle_low=handle_low,
         handle_recovery=handle_recovery,
         confirmed_date=max(cup.confirmed_date, handle_low.confirmed_date, handle_recovery.confirmed_date),
-        duration_sessions=hi - ri + 1,
+        duration_sessions=hi1 - hi0 + 1,
         depth_pct=depth,
         cup_midpoint_price=cup_midpoint,
         low_in_upper_half=handle_low.price >= cup_midpoint,
-        recovery_to_right_rim_ratio=handle_recovery.price / cup.right_rim.price,
+        recovery_to_right_rim_ratio=handle_recovery.price / handle_high.price,
     )
 
 
