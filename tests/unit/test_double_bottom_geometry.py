@@ -28,7 +28,7 @@ def test_double_bottom_geometry_measures_w_without_classifying_it():
 
     result = build_double_bottom_geometry(index, left, t1, mid, t2, right)
 
-    assert result.duration_sessions == 49
+    assert result.duration_sessions == 38
     assert result.trough_spacing_sessions == 23
     assert round(result.overall_depth_pct, 4) == 0.27
     assert round(result.trough2_vs_trough1_pct, 4) == round((73.0 - 75.0) / 75.0, 4)
@@ -36,6 +36,7 @@ def test_double_bottom_geometry_measures_w_without_classifying_it():
     assert round(result.middle_peak_recovered_fraction, 4) == 0.60
     assert round(result.right_recovery_pct, 4) == round((92.0 - 73.0) / 73.0, 4)
     assert result.right_recovery_to_left_high_ratio == 0.92
+    assert result.evidence["duration_boundary"] == "left_high_to_trough_2"
     assert result.evidence["second_trough_undercuts_first"] is True
 
 
