@@ -17,8 +17,8 @@ Last updated: 2026-09-12
 | P5 Cup family | COMPLETE | frozen first-pass as `cup-family-v1` |
 | P6 Advanced patterns | COMPLETE | frozen first-pass as `advanced-patterns-v1` |
 | P7 Fault/ambiguity layer | COMPLETE | frozen as `fault-ambiguity-v1` |
-| P8 Labelled morphology validation | BLOCKED_ON_CORPUS | schema/metrics/anti-leakage infrastructure green; no independent labelled corpus found |
-| P9 Productionization | IN PROGRESS | first-pass research-labelled output contract + batch runner next |
+| P8 Labelled morphology validation | BLOCKED_ON_CORPUS | validation infrastructure green; authoritative corpus acquisition plan now active |
+| P9 Productionization | COMPLETE | frozen as `production-v1`; deterministic PIT-safe production engine/orchestrator green |
 
 ## Frozen contracts
 
@@ -29,25 +29,29 @@ Last updated: 2026-09-12
 - P5 `cup-family-v1` — `docs/p5-cup-family-contract-v1.md`
 - P6 `advanced-patterns-v1` — `docs/p6-advanced-patterns-contract-v1.md`
 - P7 `fault-ambiguity-v1` — `docs/p7-fault-ambiguity-contract-v1.md`
+- P9 `production-v1` — `docs/p9-production-contract-v1.md`
 
 ## P8 labelled validation status
 
 Detailed status: `docs/p8-labelled-validation-status.md`.
+
+Corpus acquisition plan: `docs/p8-corpus-acquisition-plan.md`.
 
 Complete:
 
 - 8.1 label/evidence/provenance schema;
 - 8.2 corpus split/leakage contract;
 - 8.3 evaluation metrics + disagreement ids;
-- repository audit for existing independent labels.
+- repository audit for existing independent labels;
+- acquisition protocol for 30–50 initial authoritative/human-labelled examples.
 
-Blocked:
+Blocked pending real corpus:
 
 - 8.4 run frozen detectors against real labelled corpus;
-- 8.5 morphology-only threshold verdicts;
+- 8.5 morphology-only threshold verdicts (`KEEP` / `REVISE` / `UNRESOLVED`);
 - 8.6 final labelled-validation freeze.
 
-Reason: no independent authoritative/human-labelled corpus currently exists in the repository. Synthetic fixtures are intentionally ineligible as P8 evidence.
+Reason: no independent authoritative/human-labelled corpus is committed yet. Synthetic fixtures remain regression tests and are intentionally ineligible as P8 evidence.
 
 ## Frozen data-consumption decisions
 
@@ -59,32 +63,35 @@ Reason: no independent authoritative/human-labelled corpus currently exists in t
 - structural morphology/pivots use raw OHLC under current spec;
 - historical evaluation receives only rows where `date <= asof_date`.
 
-## P9 — Productionization active objective
+## P9 — Productionization freeze
 
-P9 may productionize the current engine only as **first-pass / research-labelled** while P8 is blocked. Outputs must make validation debt impossible to hide.
+Contract: `production-v1`
+
+First-pass verdict:
+
+`FIRST_PASS_ENGINE_COMPLETE_WITH_P8_VALIDATION_DEBT`
 
 ### P9 checklist
 
-- **9.1 Versioned output record/schema** — NEXT
-- 9.2 Validation-status + contract manifest in every run — NOT STARTED
-- 9.3 Batch runner over PIT-safe R2 reader — NOT STARTED
-- 9.4 Deterministic serialization / stable ids — NOT STARTED
-- 9.5 End-to-end smoke tests — NOT STARTED
-- 9.6 Productionization contract + #33 final verdict — NOT STARTED
+- 9.1 Versioned output record/schema — COMPLETE
+- 9.2 Validation-status + contract manifest in every run — COMPLETE
+- 9.3 Batch runner over PIT-safe R2 reader — COMPLETE
+- 9.4 Deterministic serialization / stable ids — COMPLETE
+- 9.5 End-to-end smoke tests + production orchestrator — COMPLETE
+- 9.6 Productionization contract + #33 first-pass verdict — COMPLETE
 
-## P9 output requirements
+### Frozen production semantics
 
-Every emitted pattern assessment must retain at minimum:
-
-- symbol/security id;
-- `asof_date`;
-- pattern/family;
-- normalized status and native state;
-- structural start/end and confirmation date when available;
-- normalized faults with severity/provenance;
-- detector/source contract versions;
-- engine/output schema version;
-- explicit labelled-validation state (`P8_BLOCKED_ON_CORPUS` until resolved).
+- output schema: `oneil-pattern-output-v1`;
+- engine version: `33-first-pass-v1`;
+- production contract: `production-v1`;
+- every run/record preserves `P8_BLOCKED_ON_CORPUS` until P8 is resolved;
+- stable assessment IDs use semantic SHA-256 identity fields;
+- canonical R2 ready reader enforces checksum/schema/PIT cutoff;
+- orchestrator composes frozen P1–P7 semantics rather than inventing parallel detectors;
+- inapplicable geometry may be skipped safely without aborting an otherwise valid security batch;
+- absence of confirmed right-edge evidence never silently becomes Cup-without-Handle;
+- research-only, theory-grounded, and contextual fault provenance remain distinguishable in production output.
 
 ## Hard constraints
 
@@ -96,7 +103,11 @@ Every emitted pattern assessment must retain at minimum:
 
 ## Next work
 
-1. Define stable production record + deterministic id semantics.
-2. Define run manifest with contract versions and P8 validation status.
-3. Wire a batch/serialization layer without changing detector semantics.
-4. Add end-to-end smoke tests against synthetic/regression data and preserve P8 blocker in output metadata.
+P9 is closed. The active workstream returns to P8:
+
+1. collect 30–50 independent authoritative/human-labelled real-world examples;
+2. prioritize explicit IBD/O'Neil pattern labels and preserve source references;
+3. assign DEVELOPMENT / VALIDATION split before inspecting detector agreement;
+4. run frozen `production-v1` / detector contracts against the corpus;
+5. issue morphology-only `KEEP` / `REVISE` / `UNRESOLVED` verdicts;
+6. freeze P8 only after untouched validation examples are evaluated.
