@@ -1,0 +1,32 @@
+candidate_id,priority,source_label_quality,window_readiness,ohlcv_route,next_action
+p8-0001,P0,EXPLICIT,HAS_BREAKOUT_WEEK,UNRESOLVED,Resolve exact Apple flat-base window from source anchors and OHLCV calendar
+p8-0002,P1,EXPLICIT,MONTH_LEVEL,UNRESOLVED,Resolve Spotify July 2023 cup-with-handle window
+p8-0003,P1,EXPLICIT,MULTIPLE_BASES,UNRESOLVED,Split Spotify 2024 three-flat-base series into individual authoritative examples
+p8-0004,P1,EXPLICIT,COARSE_PERIOD,UNRESOLVED,Resolve Spotify 2025 double-bottom window and pivot anchors
+p8-0005,P0,EXPLICIT,MONTH_RANGE,UNRESOLVED,Resolve State Street June-August 2026 ascending-base start and end from source/chart calendar
+p8-0006,P0,EXPLICIT,MONTH_RANGE,UNRESOLVED,Resolve Navan June-August 2026 ascending-base start and end from source/chart calendar
+p8-0007,P1,EXPLICIT,COARSE_PERIOD,UNRESOLVED,Resolve Granite Construction component-base windows
+p8-0008,P0,EXPLICIT,HAS_START_ANCHOR,UNRESOLVED,Resolve TSM stage-four cup-with-handle window from Oct 17 reversal and 205.63 pivot
+p8-0009,P0,EXPLICIT,HAS_BREAKOUT_DATE,UNRESOLVED,Resolve Tradeweb flat-base start from Nov 20 breakout and 136.13 pivot
+p8-0010,P2,EXPLICIT_BUT_ALTERNATE_INTERPRETATION,AMBIGUOUS,UNRESOLVED,Preserve MELI as ambiguity candidate unless source window can support one authoritative interpretation
+p8-0011,P1,EXPLICIT,HAS_PIVOT,UNRESOLVED,Resolve BRP cup-with-handle window around 18.88 pivot
+p8-0012,P1,EXPLICIT,COARSE_PERIOD,EXTERNAL_REQUIRED,Resolve Inphi June 2019 cup-with-handle window and external OHLCV lineage
+p8-0013,P1,EXPLICIT,HAS_PIVOT,EXTERNAL_REQUIRED,Resolve Inphi third-stage double-bottom around 64.85 pivot and external OHLCV
+p8-0014,P1,EXPLICIT,HAS_DURATION,EXTERNAL_REQUIRED,Resolve Mobileye 2016 eight-week double-bottom and historical ticker data
+p8-0015,P2,EXPLICIT_IN_SPIRIT,COMPOSITE_AMBIGUITY,UNRESOLVED,Do not promote as strict base-on-base until component interpretation is adjudicated
+p8-0016,P1,EXPLICIT,COARSE_PERIOD,UNRESOLVED,Resolve Caterpillar giant-cup plus flat-base component windows and September breakout
+p8-0017,P0,EXPLICIT,HAS_START_AND_BREAKOUT,UNRESOLVED,Resolve SNPS April 4 to May 18 flat-base trading window
+p8-0018,P0,EXPLICIT,HAS_BREAKOUT_DATE,UNRESOLVED,Resolve OLED second-stage cup-with-handle ending at June 18 2019 breakout
+p8-0019,P1,EXPLICIT,HAS_PIVOT,UNRESOLVED,Resolve MKTX cup-with-handle window around 411.97 pivot
+p8-0020,P1,EXPLICIT,HAS_PIVOT,UNRESOLVED,Resolve SEDG cup-with-handle window around 96.74 pivot
+p8-0021,P0,EXPLICIT,HAS_BREAKOUT_DATE,UNRESOLVED,Resolve ELF second-stage flat-base window ending Dec 22 2022 breakout
+p8-0022,P0,EXPLICIT,HAS_BREAKOUT_DATE,UNRESOLVED,Resolve ELF cup-with-handle ending July 21 2022 breakout
+p8-0023,P0,EXPLICIT,HAS_START_AND_BREAKOUT_WEEK,UNRESOLVED,Resolve AMZN September-November 2023 cup-without-handle window around 145.86 pivot
+p8-0024,P2,EXPLICIT_CUP_ONLY,MONTH_RANGE,UNRESOLVED,Confirm source supports cup-without-handle rather than generic cup before promotion
+p8-0025,P0,EXPLICIT,HAS_BREAKOUT_PERIOD,UNRESOLVED,Resolve NVDA early-November 2023 double-bottom window around 47.61 entry
+p8-0026,P0,EXPLICIT,HAS_BREAKOUT_PERIOD,UNRESOLVED,Resolve NVDA flat base ending early January 2024 at 50.55 entry
+p8-0027,P0,EXPLICIT,COMPONENTS_IDENTIFIED,UNRESOLVED,Compose NVDA double-bottom plus flat-base windows as base-on-base example
+p8-0028,P1,EXPLICIT,HAS_BREAKOUT_WEEK,UNRESOLVED,Resolve Barrick flat-base window ending week of July 25 2025
+p8-0029,P0,EXPLICIT,HAS_START_AND_BREAKOUT_DATE,UNRESOLVED,Resolve NFLX Feb 3 to May 18 2023 cup-with-handle exact handle/body boundaries
+p8-0030,P0,EXPLICIT,HAS_PIVOT,UNRESOLVED,Resolve Marex 2026 ascending-base start and three pullbacks around 75.40 entry
+p8-0031,P1,EXPLICIT,HAS_PIVOT,UNRESOLVED,Resolve IBKR September 2025 flat-base window around 68.07 pivot
