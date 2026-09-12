@@ -43,7 +43,6 @@ class PatternAssessmentEnvelope:
 
 
 _FAULT_POLICY: dict[str, tuple[FaultSeverity, RuleProvenance]] = {
-    # Theory-grounded hard morphology gates.
     "TOO_SHORT": (FaultSeverity.REJECT, RuleProvenance.THEORY),
     "TOO_LONG": (FaultSeverity.REJECT, RuleProvenance.THEORY),
     "TOO_DEEP": (FaultSeverity.REJECT, RuleProvenance.THEORY),
@@ -51,11 +50,8 @@ _FAULT_POLICY: dict[str, tuple[FaultSeverity, RuleProvenance]] = {
     "BELOW_CUP_MIDPOINT": (FaultSeverity.REJECT, RuleProvenance.THEORY),
     "NON_ASCENDING_TROUGHS": (FaultSeverity.REJECT, RuleProvenance.THEORY),
     "NON_ASCENDING_PEAKS": (FaultSeverity.REJECT, RuleProvenance.THEORY),
-    # Theory-backed normality guidance but exceptional cases may remain viable.
     "DEEP_HANDLE_EXCEPTIONAL": (FaultSeverity.AMBIGUITY, RuleProvenance.THEORY),
-    # Context/boundary evidence.
     "BOUNDARY_CONTEXT": (FaultSeverity.AMBIGUITY, RuleProvenance.CONTEXT),
-    # Research-only numerical morphology translations.
     "WIDE_LOOSE": (FaultSeverity.REJECT, RuleProvenance.RESEARCH),
     "SHALLOW_UNDERCUT": (FaultSeverity.AMBIGUITY, RuleProvenance.RESEARCH),
     "WEAK_MIDDLE_REBOUND": (FaultSeverity.AMBIGUITY, RuleProvenance.RESEARCH),
@@ -75,6 +71,8 @@ def _value(value: object) -> str:
 
 def normalize_state(native_state: object) -> NormalizedStatus:
     value = _value(native_state).upper()
+    if value == "NOT_A_RECOGNIZED_CUP":
+        return NormalizedStatus.REJECTED
     if "NOT_EVALUABLE" in value:
         return NormalizedStatus.NOT_EVALUABLE
     if "INCOMPLETE" in value:
