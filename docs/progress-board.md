@@ -17,7 +17,7 @@ Last updated: 2026-09-12
 | Landmark evaluation harness | COMPLETE FOR P1 | repaint/PIT, missed/false/date error, perturbation robustness |
 | Boundary-artifact treatment | COMPLETE | explicit edge classification retained as evidence |
 | Landmark fusion policy | COMPLETE | primary excursion skeleton; auxiliary corroboration only; no naive union |
-| P2 Base segmentation | IN PROGRESS | P2.1 structural sequence green; P2.2 boundary stages green; P2.3 geometry green; P2.4 overlap/nesting implemented |
+| P2 Base segmentation | IN PROGRESS | P2.1 structural sequence green; P2.2 boundary stages green; P2.3 geometry green; P2.4 overlap/nesting green; P2.5 PIT validation implemented |
 | Flat Base | NOT STARTED | follows P2 |
 | Double Bottom | NOT STARTED | follows P2 |
 | Cup family | NOT STARTED | shared cup morphology before handle classifier |
@@ -96,6 +96,18 @@ Pairwise provisional segments are classified as `DISJOINT`, `TOUCHING`, `OVERLAP
 
 This is deliberate because nested/overlapping structures may later be interpreted differently by Flat Base, Double Bottom, Cup family, Base-on-Base, or ambiguity/fault layers.
 
+### P2 PIT / prefix-stability validation
+
+Documented in `docs/p2-pit-validation.md`.
+
+The validation suite now asserts that:
+
+- future bars alone cannot rewrite an already-known segment;
+- a recovery with future `confirmed_date` cannot leak into an earlier prefix;
+- `DECLINE_CONFIRMED` may upgrade to `RECOVERY_CONFIRMED` only when that recovery becomes PIT-known;
+- later independent structural turns may create additional segments without rewriting an already-completed earlier segment;
+- `asof_date` remains an information cutoff, never a structural boundary.
+
 P2 outputs descriptive geometry, overlap/nesting evidence, and PIT-safe confirmation dates. Flat Base, Double Bottom, Cup, etc. are later morphology interpretations of these candidate regions.
 
 ## Hard constraints
@@ -108,7 +120,7 @@ P2 outputs descriptive geometry, overlap/nesting evidence, and PIT-safe confirma
 
 ## Next work
 
-1. Verify P2.4 overlap/nesting tests in CI.
-2. Implement P2.5 prefix/PIT segmentation stability validation.
-3. Freeze P2 contract if the full suite remains green.
-4. Start first morphology detectors only after P2 freeze.
+1. Verify P2.5 prefix/PIT tests in CI.
+2. Freeze/version the P2 segmentation contract if the full suite remains green.
+3. Mark P2 COMPLETE.
+4. Start the first morphology detector only after P2 freeze.
