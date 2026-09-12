@@ -18,6 +18,9 @@ dependencies = [
 dev = [
   "pytest>=8.0",
 ]
+validation = [
+  "yfinance>=0.2.54",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
