@@ -28,6 +28,18 @@ class SourcePrecision(str, Enum):
     MONTH = "MONTH"
 
 
+class SourceEndRole(str, Enum):
+    """Semantic role of a published end-side date.
+
+    STRUCTURAL_END is comparable to a detector structural end. BREAKOUT_DATE is
+    retained as source evidence/as-of context but must not be compared to a
+    morphology structural boundary.
+    """
+
+    STRUCTURAL_END = "STRUCTURAL_END"
+    BREAKOUT_DATE = "BREAKOUT_DATE"
+
+
 @dataclass(frozen=True, slots=True)
 class LabelEvidence:
     example_id: str
@@ -44,6 +56,7 @@ class LabelEvidence:
     rationale: str | None = None
     split: CorpusSplit = CorpusSplit.VALIDATION
     window_start_precision: SourcePrecision = SourcePrecision.DAY
+    window_end_role: SourceEndRole = SourceEndRole.STRUCTURAL_END
     expected_pivot_source_date: date | None = None
     expected_pivot_level: float | None = None
     pivot_price_adjustment_factor: float = 1.0
@@ -76,6 +89,12 @@ class LabelEvidence:
         if self.expected_pivot_level is None:
             return None
         return self.expected_pivot_level / self.pivot_price_adjustment_factor
+
+    @property
+    def comparable_structural_end(self) -> date | None:
+        if self.window_end_role != SourceEndRole.STRUCTURAL_END:
+            return None
+        return self.window_end
 
 
 def validate_corpus(labels: list[LabelEvidence]) -> None:
