@@ -12,7 +12,7 @@ Last updated: 2026-09-12
 | PIT-safe data reader | COMPLETE | manifest/checksum/schema validation + explicit `asof_date` cutoff |
 | P1 Structural Landmark Engine | COMPLETE | frozen as `p1-landmark-v1` |
 | P2 Base Segmentation | COMPLETE | frozen as `p2-segmentation-v1`; structural sequence, stage, geometry, overlap/nesting and PIT validation green |
-| P3 Flat Base | IN PROGRESS | morphology research/specification is now the active workstream |
+| P3 Flat Base | IN PROGRESS | P3.1 theory morphology defined; P3.2 detector v0 green; P3.3 reusable positive/negative/ambiguous fixtures implemented |
 | P4 Double Bottom | NOT STARTED | follows Flat Base first pass |
 | P5 Cup family | NOT STARTED | shared cup morphology before handle classifier |
 | P6 Advanced patterns | NOT STARTED | Ascending Base / Base-on-Base |
@@ -56,20 +56,30 @@ P2 does not assign Flat Base, Double Bottom, Cup, CWH, pivot, breakout, entry, o
 
 ## P3 — Flat Base active objective
 
-P3 is the first pattern-specific morphology layer. It must interpret frozen P1/P2 structure rather than rebuilding extrema or segmentation.
+P3 is the first pattern-specific morphology layer. It interprets frozen P1/P2 structure rather than rebuilding extrema or segmentation.
 
-The first task is to define a quantitative Flat Base morphology contract from structural geometry and within-region price behaviour. Thresholds must be justified by O'Neil/theory-faithful evidence and morphology validation, not return optimization.
+Theory-grounded hard gates currently preregistered:
 
-Candidate dimensions to formalize include:
+- minimum duration: 25 trading sessions;
+- maximum depth: 15%.
 
-- duration / compactness;
-- maximum depth;
-- tightness / range compression;
-- number and severity of internal structural turns;
-- relationship of recovery high to starting high;
-- wide-and-loose rejection evidence;
-- boundary / incomplete status;
-- overlap/nesting context.
+Passing these gates is necessary but not sufficient. Flat Base still requires sideways/tight behavior; `wide/loose/erratic` is contrary evidence. Because no authoritative single numerical tightness formula has been frozen, detector v0 intentionally returns `FLAT_BASE_AMBIGUOUS` for hard-gate passers while exposing morphology descriptors instead of manufacturing a recognition threshold.
+
+Current v0 descriptors:
+
+- normalized high-low range;
+- close dispersion;
+- fraction of closes within 5% of region high.
+
+Current synthetic Flat Base corpus:
+
+- `textbook_tight` — positive morphology label;
+- `too_short` — negative by duration gate;
+- `too_deep` — negative by depth gate;
+- `wide_loose` — negative morphology label despite passing hard gates;
+- `borderline_tightness` — deliberately ambiguous.
+
+The fixture labels are morphology research labels. The v0 classifier is not allowed to promote the positive fixture to `RECOGNIZED` until a tightness/fault policy is explicitly frozen.
 
 No breakout or entry logic belongs in this phase.
 
@@ -83,7 +93,8 @@ No breakout or entry logic belongs in this phase.
 
 ## Next work
 
-1. P3.1 define a theory-faithful quantitative Flat Base morphology specification.
-2. Encode positive, negative and ambiguous synthetic Flat Base fixtures.
-3. Implement the first Flat Base morphology classifier against frozen P2 segments.
-4. Validate morphology/PIT behavior before moving to Double Bottom.
+1. Verify P3.3 fixture corpus/tests in CI.
+2. P3.4 formalize wide/loose and ambiguity/fault evidence without return tuning.
+3. Preregister a morphology-only policy for tightness/fault interpretation.
+4. Validate against synthetic fixtures first, then later authoritative/human-labelled examples.
+5. Freeze P3 only after recognition/rejection/ambiguity semantics are defensible and PIT-safe.
