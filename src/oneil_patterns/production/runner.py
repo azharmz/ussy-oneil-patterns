@@ -8,7 +8,7 @@ from typing import Callable, Iterable
 
 import pandas as pd
 
-from oneil_patterns.data.r2_ready import ReadyDataset
+from oneil_patterns.data.r2_ready import ReadyDataset, load_ready_asof
 from .output import ProductionAssessmentRecord, ProductionRunManifest, serialize_jsonl
 
 SecurityAnalyzer = Callable[[str, str, pd.DataFrame, date], Iterable[ProductionAssessmentRecord]]
@@ -57,3 +57,20 @@ def run_ready_dataset(
         source_manifest_sha256=_source_manifest_digest(dataset.manifest),
     )
     return BatchRunResult(records=records, jsonl=jsonl, manifest=manifest)
+
+
+def run_from_r2(
+    s3,
+    *,
+    bucket: str,
+    asof_date: date,
+    analyze_security: SecurityAnalyzer,
+) -> BatchRunResult:
+    """Load the canonical R2 ready pointer with PIT cutoff, then run the batch.
+
+    This wrapper intentionally delegates all source validation/checksum/cutoff
+    semantics to ``load_ready_asof`` so production execution cannot bypass the
+    frozen R2 consumer contract by supplying a raw parquet key directly.
+    """
+    dataset = load_ready_asof(s3, bucket, asof_date)
+    return run_ready_dataset(dataset, asof_date=asof_date, analyze_security=analyze_security)
