@@ -11,10 +11,12 @@ Last updated: 2026-09-12
 | R2 OHLCV contract inspection | COMPLETE | official consumer pointer, schema and raw-vs-adjusted semantics documented |
 | PIT-safe data reader | IMPLEMENTED / UNIT-TESTED IN REPO | manifest/checksum/schema validation + explicit `asof_date` cutoff |
 | Landmark representation | IMPLEMENTED / EVOLVING | explicit `price_date` vs `confirmed_date`; generic `SWING_HIGH/SWING_LOW` + evidence-rich `LandmarkCandidate` |
-| Swing/extrema research | IN PROGRESS | percentage-excursion and confirmed-window candidates implemented |
+| Swing/extrema research | IN PROGRESS | excursion primary source + confirmed-window auxiliary evidence policy implemented |
 | Visual/labelled fixtures | IN PROGRESS | V-shape, W-shape, flat/sideways, rounded cup, noisy loose range + expected regions |
-| Landmark evaluation harness | IMPLEMENTED / EVOLVING | repaint/PIT checks + labelled missed/false/date-error metrics |
-| Base segmentation | NOT STARTED | blocked until evidence-rich landmark candidate layer is stable |
+| Landmark evaluation harness | IMPLEMENTED / EVOLVING | repaint/PIT checks + labelled missed/false/date-error metrics + perturbation grid |
+| Boundary-artifact treatment | COMPLETE | explicit edge classification; preserved as evidence, not silently deleted; CI green |
+| Landmark fusion policy | IMPLEMENTED / CI PENDING | primary excursion candidates; confirmed-window corroboration only; no naive union |
+| Base segmentation | NOT STARTED | blocked until P1 contract freeze |
 | Flat Base | NOT STARTED | first morphology phase |
 | Double Bottom | NOT STARTED | first morphology phase |
 | Cup family | NOT STARTED | shared cup morphology before handle classifier |
@@ -32,25 +34,31 @@ Last updated: 2026-09-12
 - #33 structural morphology/pivots use raw OHLC under current spec;
 - historical evaluation receives only rows where `date <= asof_date`.
 
-## P1 swing/extrema candidates
+## P1 structural-turn policy
 
-### Candidate A — percentage excursion
+### Primary source — percentage excursion
 
 - causal alternating swing detector;
 - confirms a peak only after a sufficient decline and a trough only after a sufficient advance;
 - stores original extremum `price_date` and later `confirmed_date`;
-- parameters are research defaults for morphology/stability only, not frozen detector semantics and not return-optimized.
+- creates the actual `LandmarkCandidate` structural skeleton.
 
-### Candidate B — confirmed window
+### Auxiliary source — confirmed window / local prominence
 
 - local high/low candidate is emitted only after a fixed number of later sessions have elapsed;
-- confirmation date is the end of the required confirmation window, never backdated to the extremum date;
-- includes a minimum local excursion/prominence requirement to suppress trivial noise;
-- parameters are research defaults only.
+- confirmation date is never backdated;
+- does **not** independently add turns to the structural candidate set;
+- when a nearby same-type turn exists, its prominence/local-extremum evidence is attached to the primary candidate.
+
+### Why no naive multi-scale union
+
+Synthetic diagnostics showed complementary behavior: confirmed-window is cleaner on several V/W/flat/noisy cases while excursion preserves diffuse rounded-cup structure. A direct union would increase turn density and ambiguity. P1 therefore freezes a primary causal skeleton plus auxiliary corroboration rather than merging every detected extremum.
+
+The decision is documented in `docs/p1-fusion-decision.md`.
 
 ## Evidence-rich candidate contract
 
-`LandmarkCandidate` is now implemented as the intermediate structural-turn representation. It is intentionally restricted to `SWING_HIGH` / `SWING_LOW` so P1 cannot prematurely assign pattern-specific meanings such as `LEFT_PEAK` or `TROUGH_1`.
+`LandmarkCandidate` is restricted to `SWING_HIGH` / `SWING_LOW`; P1 cannot prematurely assign pattern-specific meanings such as `LEFT_PEAK` or `TROUGH_1`.
 
 It can carry:
 
@@ -58,12 +66,12 @@ It can carry:
 - PIT-safe `confirmed_date`;
 - detector/method provenance;
 - excursion amplitude;
-- local prominence;
+- local prominence/corroboration;
 - temporal separation;
-- explicit boundary flag;
+- explicit boundary flag and edge distances;
 - extensible evidence payload.
 
-This object is the intended handoff from the landmark layer to later candidate-base segmentation.
+This object is the intended handoff from the landmark layer to candidate-base segmentation.
 
 ## Synthetic labelled morphology corpus
 
@@ -82,33 +90,17 @@ Expected structural turns are stored as labelled index regions where appropriate
 - `confirmed_date >= price_date`;
 - percentage-excursion confirmation is not backdated;
 - confirmed-window extrema carry the later confirmation date;
-- prefix repaint test compares contemporaneous prefix output against eventual full-series output restricted to landmarks that should already have been known by that prefix date;
-- no landmark from a truncated prefix may claim a confirmation date beyond that prefix;
-- labelled evaluation records matched expected turns, missed turns, false structural turns, and landmark-index error;
-- cross-extractor agreement is measured only from landmark type/date proximity;
-- no return, CAGR, PF, win-rate, or downstream breakout outcome enters P1 selection.
-
-A GitHub Actions pytest workflow is present so these invariants can be checked on every push/PR. The pytest import-path failure encountered during labelled-evaluation work was fixed; the subsequent baseline CI run completed successfully.
-
-## Current P1 diagnostic verdict
-
-Documented in `docs/p1-landmark-evaluation.md`.
-
-Under the current research defaults:
-
-- confirmed-window is cleaner on V/W/flat/noisy-range fixtures;
-- percentage-excursion successfully captures the diffuse rounded-cup trough that the local-prominence method misses;
-- percentage-excursion can emit left-boundary extrema that should not automatically be treated as morphology landmarks;
-- confirmed-window/local prominence therefore cannot be the sole universal landmark source;
-- neither raw extractor is frozen as the universal engine.
-
-Current architectural direction:
-
-> excursion should provide causal structural-turn candidates, while local prominence, separation, amplitude and boundary status should remain independent evidence attached to each candidate.
+- prefix repaint checks compare contemporaneous output to eventual output restricted to information known by that date;
+- no truncated prefix may claim a future confirmation date;
+- labelled evaluation records matched expected turns, missed turns, false turns, and landmark-index error;
+- preregistered nearby-parameter perturbations test morphology stability only;
+- shallow flat structure must not explode into dense false swings under small parameter changes;
+- boundary candidates remain visible as evidence instead of being silently removed;
+- no return, CAGR, PF, win-rate, breakout outcome, or portfolio result enters P1 selection.
 
 ## Immediate milestone
 
-> Given a daily OHLCV series, produce stable, reproducible, PIT-safe structural landmark candidates with enough evidence for different O'Neil morphologies to interpret them differently.
+> Freeze the P1 landmark-candidate contract and authorize P2 candidate-base segmentation.
 
 ## Hard constraints
 
@@ -120,8 +112,7 @@ Current architectural direction:
 
 ## Next work
 
-1. Wire extractor outputs into `LandmarkCandidate` enrichment so amplitude/prominence/separation/boundary evidence is computed consistently.
-2. Run a small preregistered parameter perturbation grid for morphology/stability robustness only.
-3. Confirm that interior expected landmarks remain stable while false structural turns do not explode.
-4. Decide whether P1 freezes a primary candidate source plus evidence or a multi-scale candidate union.
-5. Freeze the P1 landmark-candidate contract sufficiently to begin P2 candidate-base segmentation.
+1. Verify the fusion-policy tests in CI.
+2. Freeze/version the P1 landmark-candidate contract.
+3. Mark P1 COMPLETE if the full test suite is green.
+4. Begin P2 candidate-base segmentation: structural high → decline/trough → recovery candidate regions.
