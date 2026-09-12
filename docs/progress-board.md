@@ -12,11 +12,11 @@ Last updated: 2026-09-12
 | PIT-safe data reader | COMPLETE | manifest/checksum/schema validation + explicit `asof_date` cutoff |
 | P1 Structural Landmark Engine | COMPLETE | frozen as `p1-landmark-v1` |
 | P2 Base Segmentation | COMPLETE | frozen as `p2-segmentation-v1`; structural sequence, stage, geometry, overlap/nesting and PIT validation green |
-| P3 Flat Base | IN PROGRESS | P3.1 theory morphology defined; P3.2 detector v0 green; P3.3 reusable positive/negative/ambiguous fixtures implemented |
+| P3 Flat Base | IN PROGRESS | P3.1 theory morphology defined; P3.2 detector v0 green; P3.3 fixture corpus green; P3.4 ambiguity/fault policy implemented |
 | P4 Double Bottom | NOT STARTED | follows Flat Base first pass |
 | P5 Cup family | NOT STARTED | shared cup morphology before handle classifier |
 | P6 Advanced patterns | NOT STARTED | Ascending Base / Base-on-Base |
-| P7 Fault/ambiguity layer | NOT STARTED | wide/loose, V-shape, malformed/incomplete etc. |
+| P7 Fault/ambiguity layer | NOT STARTED | cross-pattern wide/loose, V-shape, malformed/incomplete etc. |
 | P8 Labelled morphology validation | NOT STARTED | authoritative/human-labelled corpus later required |
 | P9 Productionization | NOT STARTED | output schema/versioning/batch runner later |
 
@@ -63,23 +63,44 @@ Theory-grounded hard gates currently preregistered:
 - minimum duration: 25 trading sessions;
 - maximum depth: 15%.
 
-Passing these gates is necessary but not sufficient. Flat Base still requires sideways/tight behavior; `wide/loose/erratic` is contrary evidence. Because no authoritative single numerical tightness formula has been frozen, detector v0 intentionally returns `FLAT_BASE_AMBIGUOUS` for hard-gate passers while exposing morphology descriptors instead of manufacturing a recognition threshold.
+Passing these gates is necessary but not sufficient. Flat Base still requires sideways/tight behavior; `wide/loose/erratic` is contrary evidence.
 
-Current v0 descriptors:
+### Research tightness/fault policy — `flat-base-v0.1`
 
-- normalized high-low range;
-- close dispersion;
-- fraction of closes within 5% of region high.
+Documented in `docs/p3-flat-base-fault-policy.md`.
+
+The audited theory sources do not provide one canonical numeric formula for tightness, so the following bands are explicitly research parameters rather than official O'Neil/IBD rules:
+
+```text
+TIGHT_MAX_NORMALIZED_RANGE = 0.03
+TIGHT_MAX_CLOSE_DISPERSION = 0.01
+WIDE_LOOSE_MIN_NORMALIZED_RANGE = 0.07
+WIDE_LOOSE_MIN_CLOSE_DISPERSION = 0.03
+```
+
+Current fault vocabulary:
+
+- `TOO_SHORT`;
+- `TOO_DEEP`;
+- `WIDE_LOOSE`;
+- `BOUNDARY_CONTEXT`.
+
+Current research state policy:
+
+- hard gate failure or `WIDE_LOOSE` => `FLAT_BASE_REJECTED`;
+- hard gates pass + tight research band + no boundary fault => `FLAT_BASE_RECOGNIZED`;
+- intermediate tightness or boundary context => `FLAT_BASE_AMBIGUOUS`;
+- missing/empty required region => `FLAT_BASE_NOT_EVALUABLE`.
+
+This policy is morphology-only and must not be tuned from return, breakout success, CAGR, profit factor, win rate, or portfolio outcomes.
 
 Current synthetic Flat Base corpus:
 
-- `textbook_tight` — positive morphology label;
+- `textbook_tight` — expected research recognition;
 - `too_short` — negative by duration gate;
 - `too_deep` — negative by depth gate;
-- `wide_loose` — negative morphology label despite passing hard gates;
+- `wide_loose` — negative despite passing hard duration/depth gates;
 - `borderline_tightness` — deliberately ambiguous.
-
-The fixture labels are morphology research labels. The v0 classifier is not allowed to promote the positive fixture to `RECOGNIZED` until a tightness/fault policy is explicitly frozen.
 
 No breakout or entry logic belongs in this phase.
 
@@ -93,8 +114,8 @@ No breakout or entry logic belongs in this phase.
 
 ## Next work
 
-1. Verify P3.3 fixture corpus/tests in CI.
-2. P3.4 formalize wide/loose and ambiguity/fault evidence without return tuning.
-3. Preregister a morphology-only policy for tightness/fault interpretation.
-4. Validate against synthetic fixtures first, then later authoritative/human-labelled examples.
-5. Freeze P3 only after recognition/rejection/ambiguity semantics are defensible and PIT-safe.
+1. Verify P3.4 ambiguity/fault policy in CI.
+2. P3.5 perform morphology/PIT validation of `flat-base-v0.1`.
+3. Add parameter-neighborhood checks around the research tightness bands without using returns.
+4. Decide whether the policy is stable enough to freeze as the first Flat Base contract or remains research-only pending authoritative/human-labelled examples.
+5. Move to Double Bottom only after the Flat Base first-pass contract has an explicit validation verdict.
