@@ -4,6 +4,13 @@ on:
   push:
     branches: [main]
   pull_request:
+  workflow_dispatch:
+    inputs:
+      run_p8_development:
+        description: "Run canonical P8 DEVELOPMENT labels"
+        required: false
+        default: true
+        type: boolean
 
 jobs:
   pytest:
@@ -16,3 +23,27 @@ jobs:
           cache: pip
       - run: python -m pip install -e ".[dev]"
       - run: pytest -q
+
+  p8-development:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.run_p8_development }}
+    runs-on: ubuntu-latest
+    env:
+      R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
+      R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+      R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+      R2_BUCKET_NAME: ${{ secrets.R2_BUCKET_NAME }}
+      TIINGO_API_KEY: ${{ secrets.TIINGO_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - run: python -m pip install -e ".[validation]"
+      - run: python scripts/run_p8_development.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: p8-canonical-development
+          path: results/p8-canonical-development.json
+          if-no-files-found: warn
