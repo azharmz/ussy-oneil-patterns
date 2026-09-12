@@ -44,5 +44,7 @@ def ascending_base_fixtures():
         AscendingBaseFixture("nonascending_peak", "NEGATIVE", _geometry((100, 88, 99, 94, 113, 101, 120), normal_days)),
         AscendingBaseFixture("too_short", "NEGATIVE", _geometry((100, 88, 106, 94, 113, 101, 120), (0, 5, 10, 15, 20, 25, 30))),
         AscendingBaseFixture("too_long", "NEGATIVE", _geometry((100, 88, 106, 94, 113, 101, 120), (0, 15, 30, 45, 60, 75, 90))),
-        AscendingBaseFixture("irregular_depth", "AMBIGUOUS", _geometry((100, 94, 106, 84, 113, 105, 120), normal_days)),
+        # Higher highs/lows remain valid, but pullback depths are deliberately
+        # inconsistent so only the research-only consistency band is exercised.
+        AscendingBaseFixture("irregular_depth", "AMBIGUOUS", _geometry((100, 94, 120, 95, 150, 96, 160), normal_days)),
     ]
