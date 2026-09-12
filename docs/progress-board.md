@@ -17,7 +17,7 @@ Last updated: 2026-09-12
 | Landmark evaluation harness | COMPLETE FOR P1 | repaint/PIT, missed/false/date error, perturbation robustness |
 | Boundary-artifact treatment | COMPLETE | explicit edge classification retained as evidence |
 | Landmark fusion policy | COMPLETE | primary excursion skeleton; auxiliary corroboration only; no naive union |
-| P2 Base segmentation | IN PROGRESS | P2.1 structural sequence segmentation green; P2.2 explicit boundary stages implemented |
+| P2 Base segmentation | IN PROGRESS | P2.1 structural sequence green; P2.2 boundary stages green; P2.3 geometry semantics implemented |
 | Flat Base | NOT STARTED | follows P2 |
 | Double Bottom | NOT STARTED | follows P2 |
 | Cup family | NOT STARTED | shared cup morphology before handle classifier |
@@ -72,7 +72,23 @@ Documented in `docs/p2-boundary-semantics.md`.
 - `asof_date` is only an information cutoff and never becomes a structural boundary;
 - an incomplete segment does not mechanically grow merely because the observation horizon advances.
 
-P2 outputs descriptive geometry such as duration, depth, recovery, overlap/nesting evidence, and PIT-safe confirmation dates. Flat Base, Double Bottom, Cup, etc. are later morphology interpretations of these candidate regions.
+### P2 geometry semantics
+
+Documented in `docs/p2-geometry-features.md`.
+
+Current morphology-neutral features:
+
+- `duration_sessions`: inclusive start high → current structural end;
+- `decline_sessions`: inclusive start high → trough;
+- `recovery_sessions`: inclusive trough → recovery high, when recovery is confirmed;
+- `depth_pct = (start_high - trough) / start_high`;
+- `recovery_pct = (recovery_high - trough) / trough`;
+- `recovery_to_start_ratio = recovery_high / start_high`;
+- `recovered_depth_fraction = (recovery_high - trough) / (start_high - trough)`.
+
+A recovered-depth fraction of `1.0` means the original decline distance has been fully recovered; values above `1.0` are allowed and remain descriptive, not breakout/trading semantics.
+
+P2 outputs descriptive geometry, overlap/nesting evidence, and PIT-safe confirmation dates. Flat Base, Double Bottom, Cup, etc. are later morphology interpretations of these candidate regions.
 
 ## Hard constraints
 
@@ -84,7 +100,8 @@ P2 outputs descriptive geometry such as duration, depth, recovery, overlap/nesti
 
 ## Next work
 
-1. Verify P2.2 explicit stage/boundary tests in CI.
-2. Formalize P2.3 duration/depth/recovery feature semantics, including recovery relative to start high.
-3. Add nested/overlapping candidate handling.
-4. Validate P2 prefix/PIT stability before starting Flat Base / Double Bottom detectors.
+1. Verify P2.3 geometry tests in CI.
+2. Implement P2.4 nested/overlapping candidate handling.
+3. Validate P2 prefix/PIT stability.
+4. Freeze P2 contract if the full suite remains green.
+5. Start first morphology detectors only after P2 freeze.
