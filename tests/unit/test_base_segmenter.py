@@ -44,9 +44,14 @@ def test_segments_high_low_recovery_without_pattern_label():
     assert segment.start_date == d[1]
     assert segment.end_date == d[9]
     assert segment.duration_sessions == 9
+    assert segment.decline_sessions == 5
+    assert segment.recovery_sessions == 5
     assert segment.depth_pct == 0.20
     assert segment.recovery_pct == 0.20
+    assert segment.recovery_to_start_ratio == 0.96
+    assert segment.recovered_depth_fraction == 0.80
     assert segment.confirmed_date == d[10]
+    assert segment.evidence["feature_semantics"] == "p2-geometry-v1"
     assert "pattern" not in segment.evidence
 
 
@@ -62,12 +67,34 @@ def test_future_confirmed_recovery_is_not_used_asof_prefix():
     result = segment_base_candidates(frame, marks, asof_date=d[8])
 
     assert len(result) == 1
-    assert result[0].stage == SegmentStage.DECLINE_CONFIRMED
-    assert result[0].recovery is None
-    assert result[0].start_date == d[1]
-    assert result[0].end_date == d[5]
-    assert result[0].confirmed_date == d[6]
-    assert result[0].end_date != d[8]
+    segment = result[0]
+    assert segment.stage == SegmentStage.DECLINE_CONFIRMED
+    assert segment.recovery is None
+    assert segment.start_date == d[1]
+    assert segment.end_date == d[5]
+    assert segment.confirmed_date == d[6]
+    assert segment.end_date != d[8]
+    assert segment.decline_sessions == 5
+    assert segment.recovery_sessions is None
+    assert segment.recovery_pct is None
+    assert segment.recovery_to_start_ratio is None
+    assert segment.recovered_depth_fraction is None
+
+
+def test_full_recovery_fraction_equals_one_at_prior_high():
+    frame = _frame()
+    d = pd.to_datetime(frame.date).dt.date.tolist()
+    marks = [
+        _candidate(LandmarkType.SWING_HIGH, 100.0, d[1], d[2]),
+        _candidate(LandmarkType.SWING_LOW, 75.0, d[4], d[5]),
+        _candidate(LandmarkType.SWING_HIGH, 100.0, d[8], d[9]),
+    ]
+
+    segment = segment_base_candidates(frame, marks, asof_date=d[10])[0]
+
+    assert segment.depth_pct == 0.25
+    assert segment.recovery_to_start_ratio == 1.0
+    assert segment.recovered_depth_fraction == 1.0
 
 
 def test_asof_horizon_never_becomes_structural_end_date():
