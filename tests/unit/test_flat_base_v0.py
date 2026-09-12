@@ -31,7 +31,8 @@ def _segment(*, duration=25, depth=0.10, boundary=False):
 def _frame(segment, *, loose=False, borderline=False):
     dates = pd.date_range(segment.start_date, segment.end_date, freq="D")
     if loose:
-        closes = [96.0 if i % 2 else 100.0 for i in range(len(dates))]
+        # Deliberately crosses the preregistered research wide/loose bands.
+        closes = [91.5 if i % 2 else 100.0 for i in range(len(dates))]
     elif borderline:
         closes = [98.0 + ((i % 6) - 2.5) * 0.75 for i in range(len(dates))]
     else:
