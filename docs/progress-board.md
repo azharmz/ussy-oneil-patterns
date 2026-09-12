@@ -6,11 +6,11 @@ Last updated: 2026-09-12
 
 | Phase | Status | Notes |
 |---|---|---|
-| P0 Bootstrap | IN PROGRESS | repo initialized; package/test/docs skeleton established |
+| P0 Bootstrap | COMPLETE | repo/package/test/docs skeleton + green CI baseline established |
 | Parent #32 contract confirmation | COMPLETE | parent specification is frozen and #33 is authorized |
 | R2 OHLCV contract inspection | COMPLETE | official consumer pointer, schema and raw-vs-adjusted semantics documented |
 | PIT-safe data reader | IMPLEMENTED / UNIT-TESTED IN REPO | manifest/checksum/schema validation + explicit `asof_date` cutoff |
-| Landmark representation | IMPLEMENTED / EVOLVING | explicit `price_date` vs `confirmed_date`; generic `SWING_HIGH/SWING_LOW` added |
+| Landmark representation | IMPLEMENTED / EVOLVING | explicit `price_date` vs `confirmed_date`; generic `SWING_HIGH/SWING_LOW` + evidence-rich `LandmarkCandidate` |
 | Swing/extrema research | IN PROGRESS | percentage-excursion and confirmed-window candidates implemented |
 | Visual/labelled fixtures | IN PROGRESS | V-shape, W-shape, flat/sideways, rounded cup, noisy loose range + expected regions |
 | Landmark evaluation harness | IMPLEMENTED / EVOLVING | repaint/PIT checks + labelled missed/false/date-error metrics |
@@ -48,6 +48,23 @@ Last updated: 2026-09-12
 - includes a minimum local excursion/prominence requirement to suppress trivial noise;
 - parameters are research defaults only.
 
+## Evidence-rich candidate contract
+
+`LandmarkCandidate` is now implemented as the intermediate structural-turn representation. It is intentionally restricted to `SWING_HIGH` / `SWING_LOW` so P1 cannot prematurely assign pattern-specific meanings such as `LEFT_PEAK` or `TROUGH_1`.
+
+It can carry:
+
+- original structural price and `price_date`;
+- PIT-safe `confirmed_date`;
+- detector/method provenance;
+- excursion amplitude;
+- local prominence;
+- temporal separation;
+- explicit boundary flag;
+- extensible evidence payload.
+
+This object is the intended handoff from the landmark layer to later candidate-base segmentation.
+
 ## Synthetic labelled morphology corpus
 
 Current deterministic fixtures:
@@ -71,7 +88,7 @@ Expected structural turns are stored as labelled index regions where appropriate
 - cross-extractor agreement is measured only from landmark type/date proximity;
 - no return, CAGR, PF, win-rate, or downstream breakout outcome enters P1 selection.
 
-A GitHub Actions pytest workflow is present so these invariants can be checked on every push/PR.
+A GitHub Actions pytest workflow is present so these invariants can be checked on every push/PR. The pytest import-path failure encountered during labelled-evaluation work was fixed; the subsequent baseline CI run completed successfully.
 
 ## Current P1 diagnostic verdict
 
@@ -103,8 +120,8 @@ Current architectural direction:
 
 ## Next work
 
-1. Implement a reusable evidence-rich `LandmarkCandidate` object.
-2. Attach excursion amplitude, local prominence, temporal separation, boundary flag and method provenance.
-3. Run a small preregistered parameter perturbation grid for morphology/stability robustness only.
-4. Confirm that interior expected landmarks remain stable while false structural turns do not explode.
-5. Freeze a P1 landmark-candidate contract sufficiently to begin P2 candidate-base segmentation.
+1. Wire extractor outputs into `LandmarkCandidate` enrichment so amplitude/prominence/separation/boundary evidence is computed consistently.
+2. Run a small preregistered parameter perturbation grid for morphology/stability robustness only.
+3. Confirm that interior expected landmarks remain stable while false structural turns do not explode.
+4. Decide whether P1 freezes a primary candidate source plus evidence or a multi-scale candidate union.
+5. Freeze the P1 landmark-candidate contract sufficiently to begin P2 candidate-base segmentation.
