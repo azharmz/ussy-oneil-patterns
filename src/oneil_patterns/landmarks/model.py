@@ -7,6 +7,8 @@ from typing import Any, Mapping
 
 
 class LandmarkType(str, Enum):
+    SWING_HIGH = "SWING_HIGH"
+    SWING_LOW = "SWING_LOW"
     BASE_START = "BASE_START"
     LEFT_PEAK = "LEFT_PEAK"
     TROUGH_1 = "TROUGH_1"
