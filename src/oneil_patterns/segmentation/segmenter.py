@@ -40,15 +40,26 @@ def _build_segment(
     if not start_idx < trough_idx <= end_idx:
         raise ValueError("segment landmarks are not chronological")
 
-    depth = (start.price - trough.price) / start.price
+    decline_distance = start.price - trough.price
+    depth = decline_distance / start.price
     if depth < 0:
         raise ValueError("trough price cannot exceed start price for a decline segment")
+    if decline_distance == 0:
+        raise ValueError("decline segment requires start price above trough price")
 
+    decline_sessions = trough_idx - start_idx + 1
+    recovery_sessions = None
     recovery_pct = None
+    recovery_to_start_ratio = None
+    recovered_depth_fraction = None
     if recovery is not None:
-        recovery_pct = (recovery.price - trough.price) / trough.price
+        recovery_distance = recovery.price - trough.price
+        recovery_pct = recovery_distance / trough.price
         if recovery_pct < 0:
             raise ValueError("recovery high cannot be below trough price")
+        recovery_sessions = end_idx - trough_idx + 1
+        recovery_to_start_ratio = recovery.price / start.price
+        recovered_depth_fraction = recovery_distance / decline_distance
 
     confirmed = max(
         start.confirmed_date,
@@ -73,8 +84,12 @@ def _build_segment(
         end_date=end_mark.price_date,
         confirmed_date=confirmed,
         duration_sessions=end_idx - start_idx + 1,
+        decline_sessions=decline_sessions,
+        recovery_sessions=recovery_sessions,
         depth_pct=depth,
         recovery_pct=recovery_pct,
+        recovery_to_start_ratio=recovery_to_start_ratio,
+        recovered_depth_fraction=recovered_depth_fraction,
         evidence={
             "contract": "p2-segmentation-draft-v1",
             "complete_recovery_turn": recovery is not None,
@@ -82,6 +97,7 @@ def _build_segment(
             "trough_boundary": trough.boundary,
             "recovery_boundary": recovery.boundary if recovery is not None else None,
             "boundary_semantics": "structural_landmark_dates_not_asof_horizon",
+            "feature_semantics": "p2-geometry-v1",
         },
     )
 
