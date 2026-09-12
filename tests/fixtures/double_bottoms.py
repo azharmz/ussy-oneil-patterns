@@ -20,7 +20,7 @@ def _mark(kind, price, day):
     return LandmarkCandidate(kind, price, d, d, "fixture")
 
 
-def _geometry(prices, days=(0, 10, 20, 30, 40)):
+def _geometry(prices, days=(0, 12, 24, 36, 42)):
     marks = [
         _mark(LandmarkType.SWING_HIGH, prices[0], days[0]),
         _mark(LandmarkType.SWING_LOW, prices[1], days[1]),
