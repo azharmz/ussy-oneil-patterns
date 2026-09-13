@@ -45,7 +45,7 @@ from .structural_assembly import (
     assemble_multiturn_segments,
 )
 
-PREDICTION_ADAPTER_VERSION = "p8-canonical-prediction-adapter-v0.6"
+PREDICTION_ADAPTER_VERSION = "p8-canonical-prediction-adapter-v0.6.1"
 
 
 def _session_index(frame: pd.DataFrame) -> dict[date, int]:
@@ -82,6 +82,7 @@ def _prediction(
     pivot_level: float | None,
     pivot_date: date | None,
     detector_status: str,
+    depth_pct: float | None = None,
     detector_faults: tuple[str, ...] = (),
     candidate_semantics: str = "CONFIRMED_STRUCTURE",
 ) -> MorphologyPrediction:
@@ -92,6 +93,7 @@ def _prediction(
         end_date=end,
         pivot_source_date=pivot_date,
         pivot_level=pivot_level,
+        depth_pct=depth_pct,
         detector_status=detector_status,
         detector_faults=detector_faults,
         candidate_semantics=candidate_semantics,
@@ -117,9 +119,9 @@ def _segment_key(segment) -> tuple:
 def extract_core_morphology_predictions(frame: pd.DataFrame, *, asof_date: date) -> list[MorphologyPrediction]:
     """Emit DEVELOPMENT predictions from the canonical landmark-first stack.
 
-    v0.6 preserves confirmed structures and adds explicit right-edge observation
-    semantics for Flat bases, incomplete handles and Cup-without-Handle bodies.
-    Observation horizons/recovery highs are never fabricated P1 landmarks.
+    v0.6.1 preserves confirmed structures and explicit right-edge observations,
+    and persists candidate depth where native geometry defines it. Observation
+    horizons/recovery highs are never fabricated P1 landmarks.
     """
     if frame.empty:
         return []
@@ -161,6 +163,7 @@ def extract_core_morphology_predictions(frame: pd.DataFrame, *, asof_date: date)
                 pivot_level=pivot.pivot_level,
                 pivot_date=pivot.pivot_source_date,
                 detector_status=assessment.state.value,
+                depth_pct=segment.depth_pct,
                 detector_faults=tuple(item.value for item in assessment.faults),
             )
         )
@@ -174,6 +177,7 @@ def extract_core_morphology_predictions(frame: pd.DataFrame, *, asof_date: date)
                 pivot_level=float(observation.start.price),
                 pivot_date=observation.start.price_date,
                 detector_status=observation.state.value,
+                depth_pct=observation.depth_from_start_pct,
                 detector_faults=tuple(item.value for item in observation.faults),
                 candidate_semantics=f"OPEN_RIGHT_EDGE:{OPEN_RIGHT_EDGE_FLAT_VERSION}",
             )
@@ -190,12 +194,11 @@ def extract_core_morphology_predictions(frame: pd.DataFrame, *, asof_date: date)
                 pivot_level=pivot.pivot_level,
                 pivot_date=pivot.pivot_source_date,
                 detector_status=assessment.state.value,
+                depth_pct=geometry.overall_depth_pct,
                 detector_faults=tuple(item.value for item in assessment.faults),
             )
         )
 
-    # Explicit right-edge Cup-no-Handle observations. Start and trough are
-    # confirmed P1 landmarks; observed recovery through T is evidence only.
     for observation in enumerate_open_right_edge_cnh(ordered, landmarks, asof_date=asof_date):
         suffix = {
             CupBodyState.RECOGNIZED: "RECOGNIZED",
@@ -214,6 +217,7 @@ def extract_core_morphology_predictions(frame: pd.DataFrame, *, asof_date: date)
                 pivot_level=float(observation.left_rim.price),
                 pivot_date=observation.left_rim.price_date,
                 detector_status=f"CUP_WITHOUT_HANDLE_{suffix}",
+                depth_pct=observation.depth_pct,
                 detector_faults=tuple(item.value for item in observation.faults),
                 candidate_semantics=semantics,
             )
@@ -248,6 +252,7 @@ def extract_core_morphology_predictions(frame: pd.DataFrame, *, asof_date: date)
                     pivot_level=pivot.pivot_level,
                     pivot_date=pivot.pivot_source_date,
                     detector_status=detector_status,
+                    depth_pct=geometry.depth_pct,
                     detector_faults=tuple(item.value for item in handle_assessment.faults),
                 )
             )
@@ -271,6 +276,7 @@ def extract_core_morphology_predictions(frame: pd.DataFrame, *, asof_date: date)
                     pivot_level=float(geometry.right_rim.price),
                     pivot_date=geometry.right_rim.price_date,
                     detector_status=detector_status,
+                    depth_pct=geometry.depth_pct,
                     detector_faults=tuple(item.value for item in observation.faults),
                     candidate_semantics=f"OPEN_RIGHT_EDGE_HANDLE:{OPEN_RIGHT_EDGE_HANDLE_VERSION}",
                 )
@@ -286,6 +292,7 @@ def extract_core_morphology_predictions(frame: pd.DataFrame, *, asof_date: date)
                     pivot_level=pivot.pivot_level,
                     pivot_date=pivot.pivot_source_date,
                     detector_status="CUP_WITHOUT_HANDLE_RECOGNIZED",
+                    depth_pct=geometry.depth_pct,
                 )
             )
 
