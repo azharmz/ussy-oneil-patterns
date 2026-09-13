@@ -17,6 +17,7 @@ from oneil_patterns.morphology.cup_family import (
 )
 from oneil_patterns.morphology.double_bottom_detector import assess_double_bottom
 from oneil_patterns.morphology.flat_base import assess_flat_base
+from oneil_patterns.segmentation.segmenter import segment_base_candidates
 
 from .pivot_adapter import (
     cup_with_handle_pivot,
@@ -32,7 +33,7 @@ from .structural_assembly import (
     assemble_multiturn_segments,
 )
 
-PREDICTION_ADAPTER_VERSION = "p8-canonical-prediction-adapter-v0.3"
+PREDICTION_ADAPTER_VERSION = "p8-canonical-prediction-adapter-v0.3.1"
 
 
 def _session_index(frame: pd.DataFrame) -> dict[date, int]:
@@ -83,12 +84,21 @@ def _right_edge_context_complete(index: dict[date, int], *, right_rim: date, aso
     return index[asof_date] - index[right_rim] >= MIN_HANDLE_DURATION_SESSIONS - 1
 
 
+def _segment_key(segment) -> tuple:
+    return (
+        segment.start.price_date,
+        segment.trough.price_date,
+        segment.recovery.price_date if segment.recovery is not None else None,
+        segment.stage.value,
+    )
+
+
 def extract_core_morphology_predictions(frame: pd.DataFrame, *, asof_date: date) -> list[MorphologyPrediction]:
     """Emit DEVELOPMENT predictions from the canonical landmark-first stack.
 
-    v0.3 changes structural assembly only: P1 landmarks and all existing
-    morphology thresholds remain unchanged. Multiple structural scales and
-    Cup-family interpretations may coexist explicitly.
+    v0.3.1 preserves first-pass atomic P2 segments and adds multi-turn spans as
+    a strict superset. P1 landmarks and all morphology thresholds remain unchanged.
+    Multiple structural scales and Cup-family interpretations may coexist explicitly.
     """
     if frame.empty:
         return []
@@ -112,11 +122,13 @@ def extract_core_morphology_predictions(frame: pd.DataFrame, *, asof_date: date)
 
     predictions: list[MorphologyPrediction] = []
 
-    # Multi-turn morphology-neutral spans are a superset of the first-pass
-    # atomic high-low-high segmentation. Intervening minor P1 turns are allowed.
-    segments = assemble_multiturn_segments(ordered, landmarks, asof_date=asof_date)
+    atomic_segments = segment_base_candidates(ordered, landmarks, asof_date=asof_date)
+    multiturn_segments = assemble_multiturn_segments(ordered, landmarks, asof_date=asof_date)
+    segment_map = {_segment_key(item): item for item in atomic_segments}
+    for item in multiturn_segments:
+        segment_map.setdefault(_segment_key(item), item)
+    segments = [segment_map[key] for key in sorted(segment_map, key=lambda key: tuple(x or date.max for x in key[:3]) + (key[3],))]
 
-    # Flat Base assessment: unchanged thresholds over revised structural spans.
     for segment in segments:
         assessment = assess_flat_base(ordered, segment)
         pivot = flat_base_pivot(segment)
@@ -132,8 +144,6 @@ def extract_core_morphology_predictions(frame: pd.DataFrame, *, asof_date: date)
             )
         )
 
-    # Double Bottom assessment: unchanged geometry/threshold semantics over
-    # non-consecutive structural W candidates.
     for geometry in assemble_multiturn_double_bottoms(ordered, landmarks, asof_date=asof_date):
         assessment = assess_double_bottom(geometry)
         pivot = double_bottom_pivot(geometry)
@@ -149,7 +159,6 @@ def extract_core_morphology_predictions(frame: pd.DataFrame, *, asof_date: date)
             )
         )
 
-    # Cup family is evaluated from the same multi-turn high-low-high spans.
     for segment in segments:
         if segment.recovery is None:
             continue
@@ -158,8 +167,6 @@ def extract_core_morphology_predictions(frame: pd.DataFrame, *, asof_date: date)
         if body.state != CupBodyState.RECOGNIZED:
             continue
 
-        # Preserve every post-rim handle attempt independently. No handle
-        # interpretation suppresses Cup-without-Handle; overlap remains explicit.
         for handle_geometry in assemble_handle_geometries(
             ordered,
             geometry,
