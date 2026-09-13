@@ -59,7 +59,7 @@ def normalize_ascending_base(assessment: AscendingBaseAssessment) -> PatternAsse
         pattern="ASCENDING_BASE",
         native_state=assessment.state,
         native_faults=assessment.faults,
-        contract_version="ascending-base-v1",
+        contract_version="ascending-base-v2",
     )
 
 
@@ -68,5 +68,5 @@ def normalize_base_on_base(assessment: BaseOnBaseAssessment) -> PatternAssessmen
         pattern="BASE_ON_BASE",
         native_state=assessment.state,
         native_faults=assessment.faults,
-        contract_version="advanced-patterns-v1",
+        contract_version="advanced-patterns-v2",
     )

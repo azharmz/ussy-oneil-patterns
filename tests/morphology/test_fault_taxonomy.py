@@ -50,14 +50,14 @@ def test_native_states_map_to_shared_statuses():
     assert rejected.status == NormalizedStatus.REJECTED
 
 
-def test_research_fault_on_recognized_state_cannot_be_silently_hard_reject():
+def test_source_grounded_ascending_guardrail_normalizes_as_theory_ambiguity():
     envelope = normalize_assessment(
         pattern="ASCENDING_BASE",
         native_state=AscendingBaseState.AMBIGUOUS,
-        native_faults=(AscendingBaseFault.PULLBACK_DEPTH_INCONSISTENT,),
-        contract_version="ascending-base-v1",
+        native_faults=(AscendingBaseFault.PULLBACK_OUTSIDE_MARKETSMITH_ENVELOPE,),
+        contract_version="ascending-base-v2",
     )
-    assert envelope.faults[0].provenance == RuleProvenance.RESEARCH
+    assert envelope.faults[0].provenance == RuleProvenance.THEORY
     assert envelope.faults[0].severity == FaultSeverity.AMBIGUITY
 
 

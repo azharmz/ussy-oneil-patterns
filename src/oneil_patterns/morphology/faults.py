@@ -50,6 +50,9 @@ _FAULT_POLICY: dict[str, tuple[FaultSeverity, RuleProvenance]] = {
     "BELOW_CUP_MIDPOINT": (FaultSeverity.REJECT, RuleProvenance.THEORY),
     "NON_ASCENDING_TROUGHS": (FaultSeverity.REJECT, RuleProvenance.THEORY),
     "NON_ASCENDING_PEAKS": (FaultSeverity.REJECT, RuleProvenance.THEORY),
+    "PULLBACK_OUTSIDE_MARKETSMITH_ENVELOPE": (FaultSeverity.AMBIGUITY, RuleProvenance.THEORY),
+    "SECOND_BASE_NOT_ABOVE_FIRST": (FaultSeverity.REJECT, RuleProvenance.THEORY),
+    "SECOND_BASE_OVERLAPS_FIRST": (FaultSeverity.AMBIGUITY, RuleProvenance.THEORY),
     "DEEP_HANDLE_EXCEPTIONAL": (FaultSeverity.AMBIGUITY, RuleProvenance.THEORY),
     "BOUNDARY_CONTEXT": (FaultSeverity.AMBIGUITY, RuleProvenance.CONTEXT),
     "WIDE_LOOSE": (FaultSeverity.REJECT, RuleProvenance.RESEARCH),
@@ -59,9 +62,6 @@ _FAULT_POLICY: dict[str, tuple[FaultSeverity, RuleProvenance]] = {
     "SHARP_V": (FaultSeverity.REJECT, RuleProvenance.RESEARCH),
     "FRAGMENTED_BOTTOM": (FaultSeverity.REJECT, RuleProvenance.RESEARCH),
     "WEAK_RIGHT_RIM_RECOVERY": (FaultSeverity.AMBIGUITY, RuleProvenance.RESEARCH),
-    "PULLBACK_DEPTH_INCONSISTENT": (FaultSeverity.AMBIGUITY, RuleProvenance.RESEARCH),
-    "SECOND_BASE_NOT_ABOVE_FIRST": (FaultSeverity.REJECT, RuleProvenance.RESEARCH),
-    "SECOND_BASE_ONLY_MARGINAL_ABOVE": (FaultSeverity.AMBIGUITY, RuleProvenance.RESEARCH),
 }
 
 

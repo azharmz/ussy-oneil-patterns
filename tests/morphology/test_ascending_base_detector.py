@@ -14,7 +14,7 @@ def test_canonical_ascending_base_is_recognized():
     result = assess_ascending_base(_by_name()["canonical"].geometry)
     assert result.state == AscendingBaseState.RECOGNIZED
     assert result.theory_gates_pass is True
-    assert result.research_bands_pass is True
+    assert result.source_guardrails_pass is True
 
 
 def test_nonascending_trough_is_rejected():
@@ -38,8 +38,9 @@ def test_duration_bounds_are_hard_first_pass_gates():
     assert AscendingBaseFault.TOO_LONG in long.faults
 
 
-def test_irregular_pullback_depth_is_ambiguous_research_only():
+def test_pullback_outside_marketsmith_envelope_is_ambiguous():
     result = assess_ascending_base(_by_name()["irregular_depth"].geometry)
     assert result.state == AscendingBaseState.AMBIGUOUS
     assert result.theory_gates_pass is True
-    assert AscendingBaseFault.PULLBACK_DEPTH_INCONSISTENT in result.faults
+    assert result.source_guardrails_pass is False
+    assert AscendingBaseFault.PULLBACK_OUTSIDE_MARKETSMITH_ENVELOPE in result.faults

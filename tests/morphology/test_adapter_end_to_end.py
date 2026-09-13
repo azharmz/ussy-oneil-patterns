@@ -39,18 +39,19 @@ def test_cup_research_ambiguity_preserves_provenance():
     assert any(f.code == "SHARP_V" and f.provenance == RuleProvenance.RESEARCH for f in envelope.faults)
 
 
-def test_ascending_theory_rejection_and_research_ambiguity_remain_distinct():
-    fixtures = _by_name(ascending_bases := ascending_base_fixtures())
+def test_ascending_rejection_and_source_guardrail_ambiguity_remain_distinct():
+    fixtures = _by_name(ascending_base_fixtures())
     hard = normalize_ascending_base(assess_ascending_base(fixtures["nonascending_trough"].geometry))
     soft = normalize_ascending_base(assess_ascending_base(fixtures["irregular_depth"].geometry))
 
     assert hard.status == NormalizedStatus.REJECTED
     assert any(f.provenance == RuleProvenance.THEORY for f in hard.faults)
     assert soft.status == NormalizedStatus.AMBIGUOUS
-    assert all(f.provenance == RuleProvenance.RESEARCH for f in soft.faults)
+    assert all(f.provenance == RuleProvenance.THEORY for f in soft.faults)
+    assert soft.contract_version == "ascending-base-v2"
 
 
-def test_base_on_base_adapter_uses_advanced_contract():
+def test_base_on_base_adapter_uses_advanced_contract_v2():
     from datetime import date
 
     b1 = BaseRegionSummary("CUP_WITH_HANDLE", date(2026, 1, 1), date(2026, 1, 20), date(2026, 1, 20), 100.0, 75.0)
@@ -69,5 +70,5 @@ def test_base_on_base_adapter_uses_advanced_contract():
 
     envelope = normalize_base_on_base(native)
     assert envelope.status == NormalizedStatus.AMBIGUOUS
-    assert envelope.contract_version == "advanced-patterns-v1"
-    assert envelope.faults[0].provenance == RuleProvenance.RESEARCH
+    assert envelope.contract_version == "advanced-patterns-v2"
+    assert envelope.faults[0].provenance == RuleProvenance.THEORY
