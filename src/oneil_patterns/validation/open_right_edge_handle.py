@@ -44,6 +44,9 @@ def observe_open_right_edge_handle(
     *,
     asof_date: date,
 ) -> OpenRightEdgeHandleObservation:
+    dates = pd.to_datetime(frame["date"], errors="raise").dt.date
+    if (dates > asof_date).any():
+        raise ValueError("open-right-edge handle received future bars")
     if handle_low.type != LandmarkType.SWING_LOW:
         raise ValueError("open-right-edge handle requires a SWING_LOW")
     if handle_low.price_date <= cup.right_rim.price_date:
