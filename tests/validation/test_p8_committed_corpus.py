@@ -20,17 +20,17 @@ def _by_symbol_pattern():
 def test_committed_authoritative_corpus_passes_frozen_schema():
     labels = _labels()
 
-    assert len(labels) == 19
+    assert len(labels) == 21
     assert {item.provenance for item in labels} == {LabelProvenance.AUTHORITATIVE_SOURCE}
     assert {item.split for item in labels} == {CorpusSplit.DEVELOPMENT, CorpusSplit.VALIDATION}
-    assert len([item for item in labels if item.split == CorpusSplit.DEVELOPMENT]) == 18
+    assert len([item for item in labels if item.split == CorpusSplit.DEVELOPMENT]) == 20
     assert len([item for item in labels if item.split == CorpusSplit.VALIDATION]) == 1
 
     counts = Counter(item.pattern for item in labels if item.split == CorpusSplit.DEVELOPMENT)
     assert counts == {
         "FLAT_BASE": 5,
         "CUP_WITH_HANDLE": 5,
-        "DOUBLE_BOTTOM": 3,
+        "DOUBLE_BOTTOM": 5,
         "CUP_WITHOUT_HANDLE": 5,
     }
 
@@ -105,6 +105,11 @@ def test_new_corpus_examples_preserve_only_source_grounded_dimensions():
     assert amd.expected_pivot_level == 35.55
     assert amd.expected_depth_pct == 0.23
     assert amd.expected_depth_tolerance_pct_points == 0.02
+
+    assert labels["p8-label-0020"].symbol == "WMT"
+    assert labels["p8-label-0020"].expected_pivot_level == 60.89
+    assert labels["p8-label-0021"].symbol == "EMBJ"
+    assert labels["p8-label-0021"].expected_pivot_level == 71.68
 
 
 def test_ctsh_source_pivot_is_immutable_but_comparison_basis_is_split_normalized():
