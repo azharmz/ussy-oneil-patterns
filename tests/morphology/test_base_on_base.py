@@ -20,7 +20,7 @@ def _frame(second_values):
     return pd.DataFrame({"date": dates, "close": closes})
 
 
-def _bases(second_low):
+def _bases(second_low, second_high=108.0):
     start = date(2026, 1, 2)
     b1 = BaseRegionSummary(
         pattern="CUP_WITH_HANDLE",
@@ -35,39 +35,47 @@ def _bases(second_low):
         start_date=start + timedelta(days=36),
         end_date=start + timedelta(days=50),
         confirmed_date=start + timedelta(days=50),
-        high_price=108.0,
+        high_price=second_high,
         low_price=second_low,
     )
     return b1, b2
 
 
-def test_clearly_stacked_second_base_is_recognized():
+def test_entirely_stacked_second_base_is_recognized():
     frame = _frame([101, 102, 103, 104, 102, 105, 104, 106, 103, 105, 104, 107, 106, 105, 108])
-    b1, b2 = _bases(98.0)
+    b1, b2 = _bases(101.0)
     result = assess_base_on_base(build_base_on_base_geometry(frame, b1, b2))
     assert result.state == BaseOnBaseState.RECOGNIZED
-    assert result.geometry.second_close_fraction_above_first_high >= 0.75
+    assert result.geometry.second_low_to_first_high_ratio >= 1.0
 
 
-def test_second_base_mostly_below_first_is_rejected():
-    frame = _frame([95, 97, 99, 96, 98, 97, 101, 99, 98, 96, 97, 98, 99, 100, 99])
-    b1, b2 = _bases(94.0)
+def test_second_base_that_never_clears_first_high_is_rejected():
+    frame = _frame([95, 97, 99, 96, 98, 97, 99, 98, 97, 96, 97, 98, 99, 98, 99])
+    b1, b2 = _bases(94.0, second_high=99.0)
     result = assess_base_on_base(build_base_on_base_geometry(frame, b1, b2))
     assert result.state == BaseOnBaseState.REJECTED
     assert BaseOnBaseFault.SECOND_BASE_NOT_ABOVE_FIRST in result.faults
 
 
-def test_marginally_above_second_base_remains_ambiguous():
+def test_partial_vertical_overlap_remains_ambiguous_without_invented_threshold():
     frame = _frame([101, 102, 99, 100, 101, 98, 102, 100, 101, 99, 102, 101, 99, 100, 102])
-    b1, b2 = _bases(97.0)
+    b1, b2 = _bases(97.0, second_high=108.0)
     result = assess_base_on_base(build_base_on_base_geometry(frame, b1, b2))
     assert result.state == BaseOnBaseState.AMBIGUOUS
-    assert BaseOnBaseFault.SECOND_BASE_ONLY_MARGINAL_ABOVE in result.faults
+    assert BaseOnBaseFault.SECOND_BASE_OVERLAPS_FIRST in result.faults
+
+
+def test_close_fraction_is_diagnostic_not_state_threshold():
+    frame = _frame([101, 101, 101, 99, 101, 101, 101, 99, 101, 101, 101, 99, 101, 101, 101])
+    b1, b2 = _bases(97.0, second_high=108.0)
+    geometry = build_base_on_base_geometry(frame, b1, b2)
+    assert geometry.second_close_fraction_above_first_high >= 0.75
+    assert assess_base_on_base(geometry).state == BaseOnBaseState.AMBIGUOUS
 
 
 def test_future_rows_after_second_base_do_not_change_geometry():
     core = _frame([101, 102, 103, 104, 102, 105, 104, 106, 103, 105, 104, 107, 106, 105, 108])
-    b1, b2 = _bases(98.0)
+    b1, b2 = _bases(101.0)
     baseline = build_base_on_base_geometry(core, b1, b2)
 
     last = pd.to_datetime(core["date"].iloc[-1])

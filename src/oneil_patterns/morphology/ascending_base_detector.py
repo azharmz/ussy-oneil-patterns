@@ -8,8 +8,15 @@ from .ascending_base import AscendingBaseGeometry
 MIN_DURATION_SESSIONS = 45
 MAX_DURATION_SESSIONS = 80
 
-# Research-only shape band; not an official IBD numeric rule.
-MAX_PULLBACK_DEPTH_DISPERSION = 0.05
+# Source-grounded morphology guidance from IBD/MarketSmith material.
+# Textbook guidance is 10%-20%; MarketSmith's programmed recognition
+# envelope is broader at roughly 6%-25%. We use the latter only as an
+# outer morphology guardrail so known 8%-9% textbook examples are not
+# incorrectly rejected.
+TEXTBOOK_PULLBACK_MIN = 0.10
+TEXTBOOK_PULLBACK_MAX = 0.20
+MARKETSMITH_PULLBACK_MIN = 0.06
+MARKETSMITH_PULLBACK_MAX = 0.25
 
 
 class AscendingBaseState(str, Enum):
@@ -23,7 +30,7 @@ class AscendingBaseFault(str, Enum):
     TOO_LONG = "TOO_LONG"
     NON_ASCENDING_TROUGHS = "NON_ASCENDING_TROUGHS"
     NON_ASCENDING_PEAKS = "NON_ASCENDING_PEAKS"
-    PULLBACK_DEPTH_INCONSISTENT = "PULLBACK_DEPTH_INCONSISTENT"
+    PULLBACK_OUTSIDE_MARKETSMITH_ENVELOPE = "PULLBACK_OUTSIDE_MARKETSMITH_ENVELOPE"
 
 
 @dataclass(frozen=True, slots=True)
@@ -32,7 +39,8 @@ class AscendingBaseAssessment:
     faults: tuple[AscendingBaseFault, ...]
     geometry: AscendingBaseGeometry
     theory_gates_pass: bool
-    research_bands_pass: bool
+    source_guardrails_pass: bool
+    textbook_pullbacks: tuple[bool, bool, bool]
 
 
 def assess_ascending_base(geometry: AscendingBaseGeometry) -> AscendingBaseAssessment:
@@ -47,6 +55,11 @@ def assess_ascending_base(geometry: AscendingBaseGeometry) -> AscendingBaseAsses
     if not geometry.evidence["ascending_peaks"]:
         faults.append(AscendingBaseFault.NON_ASCENDING_PEAKS)
 
+    textbook = tuple(
+        TEXTBOOK_PULLBACK_MIN <= value <= TEXTBOOK_PULLBACK_MAX
+        for value in geometry.pullback_depths
+    )
+
     hard = {
         AscendingBaseFault.TOO_SHORT,
         AscendingBaseFault.TOO_LONG,
@@ -59,17 +72,23 @@ def assess_ascending_base(geometry: AscendingBaseGeometry) -> AscendingBaseAsses
             tuple(faults),
             geometry,
             theory_gates_pass=False,
-            research_bands_pass=False,
+            source_guardrails_pass=False,
+            textbook_pullbacks=textbook,
         )
 
-    if geometry.pullback_depth_dispersion > MAX_PULLBACK_DEPTH_DISPERSION:
-        faults.append(AscendingBaseFault.PULLBACK_DEPTH_INCONSISTENT)
+    outside_envelope = any(
+        value < MARKETSMITH_PULLBACK_MIN or value > MARKETSMITH_PULLBACK_MAX
+        for value in geometry.pullback_depths
+    )
+    if outside_envelope:
+        faults.append(AscendingBaseFault.PULLBACK_OUTSIDE_MARKETSMITH_ENVELOPE)
         return AscendingBaseAssessment(
             AscendingBaseState.AMBIGUOUS,
             tuple(faults),
             geometry,
             theory_gates_pass=True,
-            research_bands_pass=False,
+            source_guardrails_pass=False,
+            textbook_pullbacks=textbook,
         )
 
     return AscendingBaseAssessment(
@@ -77,5 +96,6 @@ def assess_ascending_base(geometry: AscendingBaseGeometry) -> AscendingBaseAsses
         tuple(faults),
         geometry,
         theory_gates_pass=True,
-        research_bands_pass=True,
+        source_guardrails_pass=True,
+        textbook_pullbacks=textbook,
     )

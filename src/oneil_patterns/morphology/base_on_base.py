@@ -45,7 +45,7 @@ class BaseOnBaseState(str, Enum):
 class BaseOnBaseFault(str, Enum):
     INVALID_ORDER = "INVALID_ORDER"
     SECOND_BASE_NOT_ABOVE_FIRST = "SECOND_BASE_NOT_ABOVE_FIRST"
-    SECOND_BASE_ONLY_MARGINAL_ABOVE = "SECOND_BASE_ONLY_MARGINAL_ABOVE"
+    SECOND_BASE_OVERLAPS_FIRST = "SECOND_BASE_OVERLAPS_FIRST"
 
 
 @dataclass(frozen=True, slots=True)
@@ -53,11 +53,6 @@ class BaseOnBaseAssessment:
     state: BaseOnBaseState
     faults: tuple[BaseOnBaseFault, ...]
     geometry: BaseOnBaseGeometry
-
-
-# Research-only translation of IBD's qualitative "entirely or mostly above".
-RECOGNIZED_ABOVE_FRACTION = 0.75
-REJECTED_ABOVE_FRACTION = 0.50
 
 
 def build_base_on_base_geometry(
@@ -97,15 +92,30 @@ def build_base_on_base_geometry(
 
 
 def assess_base_on_base(geometry: BaseOnBaseGeometry) -> BaseOnBaseAssessment:
-    fraction = geometry.second_close_fraction_above_first_high
-    faults: list[BaseOnBaseFault] = []
+    """Conservative source-grounded classification.
 
-    if fraction < REJECTED_ABOVE_FRACTION:
-        faults.append(BaseOnBaseFault.SECOND_BASE_NOT_ABOVE_FIRST)
-        return BaseOnBaseAssessment(BaseOnBaseState.REJECTED, tuple(faults), geometry)
+    IBD describes the second base as forming entirely or mostly above the first,
+    but does not publish a universal numeric threshold for "mostly". Therefore:
 
-    if fraction < RECOGNIZED_ABOVE_FRACTION:
-        faults.append(BaseOnBaseFault.SECOND_BASE_ONLY_MARGINAL_ABOVE)
-        return BaseOnBaseAssessment(BaseOnBaseState.AMBIGUOUS, tuple(faults), geometry)
+    * entirely above the first base high -> recognized;
+    * partial vertical overlap -> ambiguous;
+    * second base failing to rise above the first base high -> rejected.
 
-    return BaseOnBaseAssessment(BaseOnBaseState.RECOGNIZED, tuple(faults), geometry)
+    The close-fraction metric remains diagnostic evidence only and cannot decide
+    the morphology state without a labelled P6 corpus.
+    """
+    if geometry.base_2.low_price >= geometry.base_1.high_price:
+        return BaseOnBaseAssessment(BaseOnBaseState.RECOGNIZED, tuple(), geometry)
+
+    if geometry.base_2.high_price <= geometry.base_1.high_price:
+        return BaseOnBaseAssessment(
+            BaseOnBaseState.REJECTED,
+            (BaseOnBaseFault.SECOND_BASE_NOT_ABOVE_FIRST,),
+            geometry,
+        )
+
+    return BaseOnBaseAssessment(
+        BaseOnBaseState.AMBIGUOUS,
+        (BaseOnBaseFault.SECOND_BASE_OVERLAPS_FIRST,),
+        geometry,
+    )

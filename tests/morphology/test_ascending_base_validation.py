@@ -1,7 +1,11 @@
 from datetime import timedelta
 
 from oneil_patterns.morphology.ascending_base import build_ascending_base_geometry
-from oneil_patterns.morphology.ascending_base_detector import AscendingBaseState, assess_ascending_base
+from oneil_patterns.morphology.ascending_base_detector import (
+    AscendingBaseFault,
+    AscendingBaseState,
+    assess_ascending_base,
+)
 from tests.fixtures.ascending_bases import ascending_base_fixtures
 
 
@@ -45,3 +49,18 @@ def test_fixture_state_map_is_stable():
     }
     for fixture in ascending_base_fixtures():
         assert assess_ascending_base(fixture.geometry).state == expected[fixture.name]
+
+
+def test_textbook_band_is_evidence_not_a_hidden_hard_gate():
+    result = assess_ascending_base(_by_name()["canonical"].geometry)
+    assert result.state == AscendingBaseState.RECOGNIZED
+    assert result.source_guardrails_pass is True
+    assert result.textbook_pullbacks == (True, True, True)
+
+
+def test_outside_marketsmith_envelope_is_ambiguous_not_return_tuned():
+    result = assess_ascending_base(_by_name()["irregular_depth"].geometry)
+    assert result.state == AscendingBaseState.AMBIGUOUS
+    assert result.theory_gates_pass is True
+    assert result.source_guardrails_pass is False
+    assert AscendingBaseFault.PULLBACK_OUTSIDE_MARKETSMITH_ENVELOPE in result.faults
