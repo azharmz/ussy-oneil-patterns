@@ -4,8 +4,6 @@ Last updated: 2026-09-13
 
 `azharmz/ussy-oneil-patterns` is the canonical implementation repository for #33 O'Neil Pattern Recognition. `azharmz/ussy-canslim-research` is the parent/HQ consumer and must not host a parallel pattern engine.
 
-NFLX VALIDATION remains locked until DEVELOPMENT semantics freeze.
-
 ## Project state
 
 | Phase | Status | Notes |
@@ -15,84 +13,113 @@ NFLX VALIDATION remains locked until DEVELOPMENT semantics freeze.
 | R2 OHLCV contract inspection | COMPLETE | raw-vs-adjusted semantics documented |
 | PIT-safe data reader | COMPLETE | explicit as-of cutoff |
 | P1 Structural Landmark Engine | COMPLETE | `p1-landmark-v1` |
-| P2 Base Segmentation | FIRST-PASS COMPLETE / RIGHT-EDGE REVISION ACTIVE | explicit observation semantics added |
-| P3 Flat Base | P8 v2 DEVELOPMENT | hard gates unchanged; `WIDE_LOOSE` retained as ambiguity |
-| P4 Double Bottom | P8 v3 DEVELOPMENT | 35-session threshold retained; duration boundary revised |
-| P5 Cup family | P8 v2 DEVELOPMENT | right-edge CWH/CNH active |
-| P6 Advanced patterns | COMPLETE | `advanced-patterns-v1` |
-| P7 Fault/ambiguity layer | COMPLETE | `fault-ambiguity-v1` |
-| P8 Labelled morphology validation | EXPANDED_DEVELOPMENT_REVALIDATION | corpus expanded from 8 to 18 DEVELOPMENT examples; live rerun required |
-| P9 Productionization | COMPLETE | `production-v1`; P8 debt carried explicitly |
+| P2 Base Segmentation | COMPLETE FOR FROZEN CORE P8 | confirmed structure plus explicit right-edge observation semantics |
+| P3 Flat Base | FROZEN CORE | `flat-base-v2` |
+| P4 Double Bottom | FROZEN CORE | `double-bottom-v3`; 35-session gate retained |
+| P5 Cup family | FROZEN CORE | `cup-family-v2`; explicit right-edge CWH/CNH |
+| P6 Advanced patterns | FIRST-PASS ONLY | do not treat as having the same P8 evidence level as the four core families |
+| P7 Fault/ambiguity layer | COMPLETE | ambiguity/fault states persisted |
+| P8 Labelled morphology validation | COMPLETE — CONDITIONAL PASS | 20 DEVELOPMENT examples + one frozen NFLX VALIDATION execution |
+| P9 Productionization | COMPLETE | `production-v1`; downstream must preserve validation debt/ambiguity |
 
-## Current DEVELOPMENT stack
+## Frozen core stack
 
 - Flat: `flat-base-v2`
 - Double Bottom: `double-bottom-v3`
 - Cup family: `cup-family-v2`
+- canonical prediction adapter: `p8-canonical-prediction-adapter-v1.1`
+- pivot adapter: `p8-pivot-adapter-v0.2`
 - source evaluator: `p8-source-dimension-eval-v0.5`
-- canonical prediction adapter: v1.0 with pattern-specific structural signatures
-- candidate identity audit: v0.3 with explicit lifecycle transitions
+- candidate identity audit: `p8-candidate-identity-audit-v0.4`
 - OHLCV priority: R2 -> Yahoo/yfinance -> Tiingo; fallback only on genuine unavailability
 
-## Authoritative corpus
+Freeze record: `docs/decisions/p8-development-freeze-v1.md`.
+Final verdict: `docs/decisions/p8-final-verdict.md`.
 
-Canonical file: `data/p8/labels_v0.csv`.
+## DEVELOPMENT evidence at freeze
 
-Current DEVELOPMENT positive coverage after source-only promotion:
+Canonical corpus: `data/p8/labels_v0.csv`.
+
+Coverage:
 
 - FLAT_BASE: 5
 - CUP_WITH_HANDLE: 5
-- DOUBLE_BOTTOM: 3
+- DOUBLE_BOTTOM: 5
 - CUP_WITHOUT_HANDLE: 5
 
-New source-grounded examples were promoted without detector inspection: EXEL, TRGP, LLY, APH, NVDA CWH, BAC, INTC, ARW, AMD and SE.
-
-VALIDATION:
-- NFLX — CUP_WITH_HANDLE — LOCKED / UNTOUCHED
-
-## Last fully audited live result before expansion
-
-The prior eight-label artifact was:
+Frozen DEVELOPMENT artifact:
 
 ```text
-MATCH                  = 8
-BOUNDARY_DISAGREEMENT  = 0
-LANDMARK_DISAGREEMENT  = 0
-MISS_PATTERN           = 0
-STATUS_CONFLICT        = 0
+result_count                 = 20
+MATCH                        = 20
+BOUNDARY_DISAGREEMENT        = 0
+LANDMARK_DISAGREEMENT        = 0
+MISS_PATTERN                 = 0
+STATUS_CONFLICT              = 0
 ```
 
-Identity states were 670 STABLE, 29 MULTI_SEMANTIC_STABLE_STATUS and 4 LIFECYCLE_TRANSITION. The expanded 18-label corpus must now be rerun before any freeze decision.
+Candidate identity states:
 
-## Current verdicts
+```text
+STABLE                        = 940
+MULTI_SEMANTIC_STABLE_STATUS  = 59
+LIFECYCLE_TRANSITION          = 9
+STATUS_CONFLICT               = 0
+```
 
-- provider routing: KEEP
-- optional source-dimension evaluator: KEEP
-- explicit corporate-action comparison: KEEP
-- right-edge/open-base representation: KEEP as explicit observation semantics
-- Flat `WIDE_LOOSE`: ambiguity; numeric tightness bands remain evidence-dependent
-- CWH start/left-rim representation: resolved for prior corpus
-- Double Bottom undercut: ambiguity, not absolute identity gate
-- Double Bottom duration threshold: keep 35 sessions; boundary semantics revised
-- Cup roundedness research faults: ambiguity
-- candidate identity collision: zero conflicts on prior corpus; expanded-corpus audit pending
+Freeze evidence commit: `2ed3dadcc354f56f4cb27401248daef60b1627fa`.
+Freeze workflow run: `34740880269`.
 
-## Hard constraints
+## Independent VALIDATION
 
-- no future bars or backdated confirmation;
-- no return/CAGR/PF/FWD1/breakout-outcome tuning;
-- no fabricated authoritative labels;
-- source dimensions remain immutable and source-grounded;
-- right-edge horizon is observation evidence, never a fabricated P1 landmark;
-- NFLX VALIDATION remains untouched until DEVELOPMENT freeze;
-- #34 must not start until P8/#33 receives a defensible final verdict.
+The locked NFLX `CUP_WITH_HANDLE` case was opened exactly once after freeze.
 
-## Next work
+Workflow run: `34741079533`.
+Artifact id: `10312408925`.
 
-1. run all 18 DEVELOPMENT labels through the canonical stack;
-2. classify new source disagreements and identity conflicts without touching VALIDATION;
-3. Double Bottom remains below the approximate five-example coverage target, so acquire two more independent authoritative DB examples if needed;
-4. freeze numerical-band verdicts only where independent evidence is sufficient; otherwise retain `UNRESOLVED`;
-5. freeze DEVELOPMENT semantics only after the expanded run is defensible;
-6. open NFLX VALIDATION exactly once against that frozen version;
-7. freeze P8/#33 and update the parent pointer before #34.
+Result:
+
+```text
+agreement_state         = MATCH
+candidate_resolution    = UNIQUE
+source start            = 2023-02-03
+matched start           = 2023-02-03
+start error             = 0 days
+matched detector state  = CUP_WITH_HANDLE_AMBIGUOUS
+candidate semantics     = OPEN_RIGHT_EDGE_HANDLE:p8-open-right-edge-handle-v0.1
+detector fault          = BELOW_CUP_MIDPOINT
+```
+
+The one-shot workflow path was removed after execution so NFLX is not repeatedly re-used as tuning evidence.
+
+## Final P8 verdict
+
+**CONDITIONAL PASS / FROZEN WITH VALIDATION DEBT** for the four core families.
+
+What passed:
+
+- source-grounded pattern representation;
+- PIT/right-edge semantics;
+- source precision and corporate-action comparison handling;
+- 20/20 DEVELOPMENT source-dimension agreement;
+- zero true candidate identity conflicts in the frozen DEVELOPMENT audit;
+- unique independent NFLX structural match at the authoritative start date.
+
+What remains debt:
+
+- NFLX remains `CUP_WITH_HANDLE_AMBIGUOUS` because of frozen `BELOW_CUP_MIDPOINT` severity;
+- the locked NFLX row intentionally did not score pivot/depth, so not every numeric CWH band received independent validation;
+- advanced pattern families do not inherit the core P8 evidence level.
+
+No frozen morphology threshold may now be changed from the NFLX result.
+
+## Downstream contract
+
+A downstream #34 candidate generator may now consume the frozen four core pattern families, but it must preserve:
+
+- `RECOGNIZED` / `AMBIGUOUS` / `REJECTED` state;
+- candidate semantics;
+- detector faults;
+- source/validation provenance where applicable.
+
+`AMBIGUOUS` must not be silently converted into either recognized or absent morphology. #34 must not reopen P8 based on returns, CAGR, PF, FWD1, breakout outcomes or entry optimization.
