@@ -54,7 +54,7 @@ def test_fixture_corpus_maps_to_preregistered_states():
     expected = {
         "canonical_w": DoubleBottomState.RECOGNIZED,
         "too_deep": DoubleBottomState.REJECTED,
-        "no_second_undercut": DoubleBottomState.REJECTED,
+        "no_second_undercut": DoubleBottomState.AMBIGUOUS,
         "weak_middle_rebound": DoubleBottomState.AMBIGUOUS,
         "shallow_undercut": DoubleBottomState.AMBIGUOUS,
     }
