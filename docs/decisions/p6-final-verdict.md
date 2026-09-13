@@ -1,53 +1,97 @@
-# P6 Advanced Patterns — Final Verdict
+# P6 Advanced Patterns — Final Authoritative Validation Verdict
 
 Date: 2026-09-13
 
-Verdict: **CONDITIONAL PASS / FROZEN WITH VALIDATION DEBT**
+Verdict: **VALIDATION FAIL / FROZEN — NOT PRODUCTION-VALIDATED**
 
-Scope: `ASCENDING_BASE` and `BASE_ON_BASE` only.
+Scope: `ASCENDING_BASE` and `BASE_ON_BASE` only. Frozen P3/P4/P5/P8 core morphology is unchanged.
 
-## Why this verdict is defensible
+## Validation standard
 
-P6 v1 contained two state-driving numerical ideas that were explicitly research-only:
+P6 was re-opened only as a separately versioned validation cycle and was held to the same basic evidence discipline as the four core families:
 
-- Ascending Base pullback-depth dispersion threshold `0.05`;
-- Base-on-Base close-above-first-high thresholds `0.50` / `0.75`.
+1. authoritative positive DEVELOPMENT corpus;
+2. untouched authoritative VALIDATION corpus locked before tuning;
+3. PIT-safe morphology extraction and source-dimension scoring;
+4. DEVELOPMENT freeze before VALIDATION open;
+5. one-shot frozen VALIDATION execution;
+6. no tuning from VALIDATION or trading outcomes.
 
-Those numbers were not independently labelled and were not stated as universal O'Neil/IBD rules. Leaving them as state gates would create false precision.
+## Frozen DEVELOPMENT
 
-P6 v2 removes them from classification and replaces them with conservative source-grounded semantics:
+Freeze record: `docs/decisions/p6-development-freeze-v1.md`.
 
-- Ascending Base preserves the three-pullback, higher-high/higher-low and 9–16-week structure, with IBD/MarketSmith's 6%–25% recognition envelope used only as an outer ambiguity guardrail; the familiar 10%–20% textbook band remains evidence, not universal exclusion logic.
-- Base-on-Base recognizes the unambiguous case where the entire second base sits above the first base high, rejects a second base that never rises above the first-base high, and preserves partial overlap as ambiguous because published guidance says “entirely or mostly above” without defining a universal numerical “mostly” threshold.
+- evidence commit: `ba13844145095a4bb40f75d9ce477fd61d3aad50`
+- workflow run: `34748254127`
+- artifact id: `10315076061`
+- artifact digest: `sha256:332f7fc9aab753280b386491cb59d3a48ad4f258374c7e40b804309eb93425e8`
+- regression: **235 tests passed**
+- P8 DEVELOPMENT: **skipped**
+- corpus: 5 authoritative `ASCENDING_BASE` + 5 authoritative `BASE_ON_BASE` positives
+- source-dimension agreement: **10/10 MATCH**
+- candidate identity `STATUS_CONFLICT`: **0**
 
-This is intentionally conservative: uncertainty is surfaced rather than filled with a return-tuned or arbitrary number.
+However, detector-state evidence was materially weaker than source-dimension agreement:
 
-## What passed
+- Ascending Base: 1 recognized, 1 ambiguous, 3 rejected;
+- Base-on-Base: 1 recognized, 4 ambiguous.
 
-- theory/source audit completed for both advanced families;
-- unsupported v1 numerical state gates removed;
-- explicit v2 contracts and versioned adapter output;
-- PIT/future-extension invariance retained;
-- positive, rejection and ambiguity fixtures retained/strengthened;
-- normalized fault taxonomy distinguishes source-grounded P6 ambiguity from research-only core diagnostics;
-- full repository regression suite passed: **227 tests** on workflow run `34746587586` at commit `642cfe36aeadf0a488e3478bbfec8cd1e0dfdf07`.
+The DEVELOPMENT cycle therefore froze explicit detector-state debt rather than hiding it behind source pivot agreement.
 
-## What remains validation debt
+## Untouched one-shot VALIDATION
 
-1. No independent human/authoritative labelled OHLCV corpus exists for P6 comparable to the frozen P8 core corpus.
-2. Base-on-Base's qualitative “mostly above” region is intentionally unresolved. Partial vertical overlap remains `AMBIGUOUS`; no close-fraction threshold may be invented or tuned from returns.
-3. Ascending Base's 45–80 observed-session duration remains an operational translation of 9–16 weeks and has not received independent boundary validation.
-4. Prior uptrend, market weakness, moving-average support, Base-on-Base initial breakout gain <20%, stage counting, buy points and breakout execution remain contextual/downstream evidence, not morphology gates silently added to P6.
-5. Advanced patterns do not inherit the P8 core evidence level and remain outside frozen production schema `oneil-pattern-output-v2` / engine `33-core-p8-frozen-v1`.
+The locked rows were `p6-label-0011` (State Street, `ASCENDING_BASE`) and `p6-label-0012` (Citigroup, `BASE_ON_BASE`). They were opened exactly once after DEVELOPMENT freeze.
 
-## Freeze rule
+Execution commit: `2c10165e67c1486459ddf191021243ad70e90f7b`.
+Workflow: `p6-validation-once`, run `34750413835`.
+Artifact: `p6-frozen-validation`, id `10315775412`.
+Artifact digest: `sha256:618c72a7accbb9b5434db9040e2bad645bf0435de21b32ffac019bfe4d83ca16`.
 
-P6 v2 is now frozen for the current #33 scope.
+Frozen one-shot result:
 
-Do not:
+```text
+result_count                    = 2
+source-dimension MATCH          = 2
+candidate identity conflicts    = 0
 
-- tune P6 from CAGR, PF, FWD1, breakout success, trade returns, or a convenient single chart;
-- reinterpret P3/P4/P5/P8 thresholds from P6 work;
-- add advanced families to frozen production v2 while implying P8-equivalent validation.
+STT ASCENDING_BASE:
+  candidate resolution          = UNIQUE
+  matched detector state        = ASCENDING_BASE_REJECTED
 
-A future attempt to reduce P6 validation debt must open a separately versioned P6 validation cycle with independent morphology labels and a predeclared scoring protocol. The current verdict and v2 contracts remain immutable evidence of this cycle.
+C BASE_ON_BASE:
+  candidate resolution          = SOURCE_EQUIVALENT_MULTIPLE
+  matched detector state        = BASE_ON_BASE_AMBIGUOUS
+```
+
+The one-shot workflow path was removed immediately after execution in commit `da251cee5f8ffbc3038a198950d3b824f4b4d458` so VALIDATION cannot become iterative tuning evidence.
+
+## Interpretation
+
+The two authoritative VALIDATION rows agree with the frozen adapter on the published pattern identity/pivot dimensions, but neither positive untouched example is recognized by the frozen detector state. Under a morphology-validation standard, `MATCH` on sparse source dimensions is not sufficient to override a `REJECTED` or `AMBIGUOUS` morphology state.
+
+Therefore P6 does **not** earn the core patterns' validation status. The defensible verdict for this cycle is **VALIDATION FAIL**, not CONDITIONAL PASS.
+
+This is not evidence that the published patterns are invalid. It is evidence that the current quantitative P6 representation is not sufficiently validated to claim reliable recognition of authoritative examples.
+
+## Why no post-validation fix is allowed
+
+The observed failures cannot be repaired inside this cycle without contaminating the untouched test:
+
+- `ASCENDING_BASE`: the validation example is uniquely resolved but rejected. Weakening higher-low or related morphology after seeing STT would be direct validation-set tuning.
+- `BASE_ON_BASE`: authoritative guidance permits the second base to sit “entirely or mostly above” the first, but the available source material does not provide a universal numerical definition of “mostly.” Converting the C result from ambiguous to recognized by inventing an overlap percentage would create unsupported precision.
+
+A new P6 cycle is allowed only with new authoritative DEVELOPMENT evidence and a new untouched VALIDATION set. The failed one-shot rows must never be recycled as untouched validation.
+
+## Frozen consequences
+
+- `ASCENDING_BASE` and `BASE_ON_BASE` remain outside `oneil-pattern-output-v2`.
+- No downstream consumer may describe P6 as P8-equivalent or production-validated.
+- P3/P4/P5/P8 core remains frozen and unchanged.
+- No return, CAGR, PF, FWD1, breakout success, entry optimization, or portfolio outcome may be used to rescue this verdict.
+- Existing P6 v2/v3 implementation and artifacts remain historical evidence; this verdict supersedes the earlier `CONDITIONAL PASS / FROZEN WITH VALIDATION DEBT` status.
+
+## What would justify another cycle
+
+A new cycle requires authoritative chart evidence that adds morphology information, not merely another ticker name or buy point. In particular, useful evidence would independently identify the Ascending Base pullback sequence/boundaries and provide enough Base-on-Base geometry to operationalize the qualitative “mostly above” region without fitting it to validation outcomes.
+
+Until such evidence exists, P6 is **FROZEN — VALIDATION FAIL / NOT PRODUCTION-VALIDATED**.
