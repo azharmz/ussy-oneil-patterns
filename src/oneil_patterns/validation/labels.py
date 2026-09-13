@@ -47,6 +47,8 @@ class LabelEvidence:
     expected_pivot_source_date: date | None = None
     expected_pivot_level: float | None = None
     pivot_price_adjustment_factor: float = 1.0
+    expected_depth_pct: float | None = None
+    expected_depth_tolerance_pct_points: float | None = None
     metadata: Mapping[str, str] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
@@ -74,6 +76,14 @@ class LabelEvidence:
             raise ValueError("expected pivot level must be positive")
         if self.pivot_price_adjustment_factor <= 0:
             raise ValueError("pivot price adjustment factor must be positive")
+        if self.expected_depth_pct is not None and not 0 < self.expected_depth_pct < 1:
+            raise ValueError("expected depth pct must be in (0, 1)")
+        if self.expected_depth_pct is None and self.expected_depth_tolerance_pct_points is not None:
+            raise ValueError("depth tolerance requires expected depth")
+        if self.expected_depth_pct is not None and self.expected_depth_tolerance_pct_points is None:
+            raise ValueError("expected depth requires explicit source tolerance")
+        if self.expected_depth_tolerance_pct_points is not None and self.expected_depth_tolerance_pct_points < 0:
+            raise ValueError("depth tolerance must be non-negative")
 
     @property
     def comparison_pivot_level(self) -> float | None:
