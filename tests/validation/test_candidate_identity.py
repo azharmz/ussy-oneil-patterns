@@ -52,6 +52,27 @@ def test_core_and_right_edge_maturity_share_identity_as_lifecycle_transition():
     assert item.structural_signature[-1] == "TROUGH_2:2024-09-12"
 
 
+def test_prefixed_right_edge_semantics_are_still_lifecycle_evidence():
+    core = _prediction(
+        "core",
+        end=date(2024, 9, 12),
+        status="DOUBLE_BOTTOM_REJECTED",
+        faults=("TOO_SHORT",),
+        semantics="LOCAL_TURN_AUX:p8-local-turn-v0.1:CONFIRMED_STRUCTURE",
+    )
+    right = _prediction(
+        "right",
+        end=date(2024, 9, 20),
+        status="DOUBLE_BOTTOM_RECOGNIZED",
+        semantics="LOCAL_TURN_AUX:p8-local-turn-v0.1:OPEN_RIGHT_EDGE_DOUBLE_BOTTOM:v0",
+    )
+
+    audit = audit_candidate_identities([core, right])
+
+    assert len(audit) == 1
+    assert audit[0].identity_state == "LIFECYCLE_TRANSITION"
+
+
 def test_non_maturity_status_change_remains_conflict():
     confirmed = _prediction(
         "confirmed",
