@@ -1,113 +1,106 @@
-# P8 Labelled Morphology Validation — Status
+# P8 Labelled Morphology Validation — Final Status
 
-Status: **CANONICAL DEVELOPMENT REVISION IN PROGRESS**
+Status: **COMPLETE — CONDITIONAL PASS / FROZEN WITH VALIDATION DEBT**
 
-## Canonical boundary
+`azharmz/ussy-oneil-patterns` is the canonical source of truth for #33/P8. The former parallel P8 implementation in `azharmz/ussy-canslim-research` is migration evidence only.
 
-`azharmz/ussy-oneil-patterns` is the source of truth for #33/P8 implementation and validation. The former parallel P8 implementation in `azharmz/ussy-canslim-research` is migration evidence only.
-
-NFLX VALIDATION remains locked and untouched.
-
-## Infrastructure state
-
-P8 now has:
-
-- authoritative machine-readable labels and provenance;
-- DEVELOPMENT / VALIDATION split with leakage guardrails;
-- optional source dimensions instead of invented boundaries;
-- `DAY` / `MONTH` source precision;
-- source pivot normalization while preserving source values;
-- optional source depth comparison;
-- strict OHLCV routing `R2 -> Yahoo/yfinance -> Tiingo`;
-- source-dimension evaluator `p8-source-dimension-eval-v0.4`;
-- canonical prediction adapter with explicit candidate semantics;
-- OPEN_RIGHT_EDGE Flat, Handle and Cup-no-Handle observations;
-- live DEVELOPMENT Actions runner/artifact;
-- persisted detector state/fault evidence.
-
-## Corpus
+## Frozen DEVELOPMENT corpus
 
 Canonical file: `data/p8/labels_v0.csv`.
 
-DEVELOPMENT:
+Authoritative positive DEVELOPMENT coverage:
 
-1. SNPS — `FLAT_BASE`
-2. CTSH — `CUP_WITH_HANDLE`
-3. FOUR — `CUP_WITH_HANDLE`
-4. SEI — `DOUBLE_BOTTOM`
-5. AMZN — `CUP_WITHOUT_HANDLE`
-6. TW — `FLAT_BASE`
-7. NVDA — `DOUBLE_BOTTOM`
-8. SPOT — `DOUBLE_BOTTOM`
+- FLAT_BASE: 5
+- CUP_WITH_HANDLE: 5
+- DOUBLE_BOTTOM: 5
+- CUP_WITHOUT_HANDLE: 5
 
-VALIDATION:
-
-- NFLX — `CUP_WITH_HANDLE` — **LOCKED / UNTOUCHED**
-
-## Latest live DEVELOPMENT result
+Frozen result:
 
 ```text
-MATCH                  = 7
-BOUNDARY_DISAGREEMENT  = 1
-LANDMARK_DISAGREEMENT  = 0
-MISS_PATTERN           = 0
+20 / 20 MATCH
+0 boundary disagreement
+0 landmark disagreement
+0 pattern miss
+0 identity STATUS_CONFLICT
 ```
 
-| Example | Agreement | Detector evidence | Diagnosis |
-|---|---|---|---|
-| SNPS / FLAT_BASE | MATCH | source-aligned right-edge candidate exists; selected candidate still reports `FLAT_BASE_REJECTED` | source dimensions represented; candidate identity/ranking audit still required |
-| TW / FLAT_BASE | MATCH | `FLAT_BASE_AMBIGUOUS` | only research `WIDE_LOOSE` remains |
-| CTSH / CUP_WITH_HANDLE | BOUNDARY_DISAGREEMENT | `CUP_WITH_HANDLE_RECOGNIZED` | source January start/left-rim remains unresolved |
-| FOUR / CUP_WITH_HANDLE | MATCH | `CUP_WITH_HANDLE_AMBIGUOUS` | 84.26 pivot now exact through open-right-edge handle; deep-handle ambiguity retained |
-| SEI / DOUBLE_BOTTOM | MATCH | `DOUBLE_BOTTOM_REJECTED` | only unchanged `TOO_SHORT` hard gate remains |
-| NVDA / DOUBLE_BOTTOM | MATCH | `DOUBLE_BOTTOM_RECOGNIZED` | clean source-aligned recognized example |
-| SPOT / DOUBLE_BOTTOM | MATCH | `DOUBLE_BOTTOM_AMBIGUOUS` | exact 621.20 pivot; no-undercut is now explicit ambiguity |
-| AMZN / CUP_WITHOUT_HANDLE | MATCH | `CUP_WITHOUT_HANDLE_AMBIGUOUS` | source depth selects Sep 14 -> Oct 26 scale; roundedness proxies retained as ambiguity |
+Candidate identity audit:
 
-## Active v2 contracts
+```text
+STABLE                        = 940
+MULTI_SEMANTIC_STABLE_STATUS  = 59
+LIFECYCLE_TRANSITION          = 9
+STATUS_CONFLICT               = 0
+```
 
-- `flat-base-v2` — research `WIDE_LOOSE` no longer hard rejection;
-- `double-bottom-v2` — absence of second-trough undercut maps to ambiguity;
-- `cup-family-v2` — `SHARP_V` / `FRAGMENTED_BOTTOM` map to ambiguity; explicit right-edge CWH/CNH observations remain separate candidate semantics.
+Freeze evidence commit: `2ed3dadcc354f56f4cb27401248daef60b1627fa`.
+Freeze workflow run: `34740880269`.
+Freeze decision: `docs/decisions/p8-development-freeze-v1.md`.
 
-Numeric research bands are unchanged by those revisions.
+## Frozen implementation
 
-## Morphology-only verdicts
+- Flat: `flat-base-v2`
+- Double Bottom: `double-bottom-v3`
+- Cup family: `cup-family-v2`
+- prediction adapter: `p8-canonical-prediction-adapter-v1.1`
+- pivot adapter: `p8-pivot-adapter-v0.2`
+- source evaluator: `p8-source-dimension-eval-v0.5`
+- candidate identity audit: `p8-candidate-identity-audit-v0.4`
+- source routing: strict R2 -> Yahoo/yfinance -> Tiingo
 
-| Area | Current verdict |
+No return, CAGR, PF, FWD1, breakout outcome or entry optimization was used to tune morphology.
+
+## Independent VALIDATION
+
+NFLX `CUP_WITH_HANDLE` was kept untouched through DEVELOPMENT freeze and then executed once.
+
+Workflow run: `34741079533`.
+Artifact id: `10312408925`.
+Artifact digest: `sha256:57203f50b3cd9292c81fcb351e5f06ceeb69871cebfd00f1ed47bbfbf6388670`.
+
+Result:
+
+```text
+agreement_state         = MATCH
+candidate_resolution    = UNIQUE
+source start            = 2023-02-03
+matched start           = 2023-02-03
+start error             = 0 days
+matched detector state  = CUP_WITH_HANDLE_AMBIGUOUS
+candidate semantics     = OPEN_RIGHT_EDGE_HANDLE:p8-open-right-edge-handle-v0.1
+detector fault          = BELOW_CUP_MIDPOINT
+```
+
+The one-shot workflow trigger was retired after execution.
+
+## Interpretation
+
+The independent case confirms that the frozen engine can represent the source-authoritative NFLX CWH at the exact published start anchor with a unique source-equivalent candidate.
+
+The detector nevertheless keeps the case `AMBIGUOUS` because of its frozen `BELOW_CUP_MIDPOINT` severity rule. That is retained as validation debt rather than tuned away.
+
+The NFLX row intentionally left pivot and depth unscored before VALIDATION was opened. Those dimensions are not added after seeing the result. Therefore independent evidence covers the preregistered comparable dimensions, not every numeric CWH band.
+
+## Final morphology verdicts
+
+| Area | Final verdict |
 |---|---|
-| Missing-provider routing semantics | KEEP |
-| Source evaluator optional dimensions | KEEP |
-| Source depth dimension | KEEP for candidate-scale adjudication |
-| Right-edge representation | REVISE — implemented explicitly |
-| Flat `WIDE_LOOSE` severity | REVISE — ambiguity |
-| Flat numeric tightness bands | UNRESOLVED |
-| CWH pivot role / right-edge handle | REVISE — FOUR now source-aligned |
-| CWH start / left-rim semantics | UNRESOLVED — CTSH |
-| DB strict second-trough undercut | REVISE — ambiguity |
-| DB duration gate / boundary semantics | UNRESOLVED — SEI |
-| Cup roundedness proxy severity | REVISE — ambiguity |
-| Cup-no-Handle candidate scale | KEEP source-depth selection; identity churn audit pending |
-| BaseIdentity / Lineage freeze | NOT READY |
+| Provider routing semantics | KEEP |
+| Optional source dimensions / precision | KEEP |
+| Corporate-action comparison | KEEP |
+| Right-edge observation semantics | KEEP |
+| Flat `WIDE_LOOSE` severity | ambiguity |
+| DB second-trough undercut | ambiguity, not absolute rejection |
+| DB 35-session threshold | KEEP; boundary/completion semantics revised |
+| Cup roundedness proxy severity | ambiguity |
+| Candidate identity collision handling | PASS on frozen DEVELOPMENT corpus |
+| Independent core structural validation | PASS on frozen NFLX comparable dimensions |
+| CWH `BELOW_CUP_MIDPOINT` severity | UNRESOLVED / validation debt |
+| Every numeric band independently validated | NO |
 
-## Current work order
+## Downstream rule
 
-1. CTSH source-start/left-rim audit;
-2. additional authoritative DB duration evidence before any duration revision;
-3. BaseIdentity / Lineage and candidate-ranking stability audit;
-4. targeted extra evidence only where remaining numeric bands are decision-relevant;
-5. freeze DEVELOPMENT semantics;
-6. open NFLX VALIDATION exactly once;
-7. record final P8 verdict and freeze #33 before #34 starts.
+The four core pattern families may be consumed downstream only with explicit `RECOGNIZED`, `AMBIGUOUS`, `REJECTED`, candidate semantics and detector faults preserved. Advanced families do not automatically inherit this P8 evidence level.
 
-## Guardrails
-
-- DEVELOPMENT only during tuning;
-- NFLX VALIDATION remains locked;
-- no return, CAGR, PF, FWD1, breakout-performance or entry optimization;
-- no source dimension invented from detector output;
-- authoritative source values remain immutable;
-- corporate-action normalization stays explicit;
-- multiple plausible structural scales stay visible;
-- synthetic fixtures are regression-only;
-- contradictory or low-coverage numeric bands remain `UNRESOLVED`.
+Final decision record: `docs/decisions/p8-final-verdict.md`.
