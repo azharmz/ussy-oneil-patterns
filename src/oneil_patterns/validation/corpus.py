@@ -24,6 +24,11 @@ def _optional_float(value: str | None) -> float | None:
     return float(text) if text else None
 
 
+def _optional_precision(value: str | None) -> SourcePrecision | None:
+    text = (value or "").strip()
+    return SourcePrecision(text) if text else None
+
+
 def load_label_corpus_csv(path: str | Path) -> list[LabelEvidence]:
     """Load committed real-world labels without inventing absent source dimensions."""
     items: list[LabelEvidence] = []
@@ -59,8 +64,8 @@ def load_label_corpus_csv(path: str | Path) -> list[LabelEvidence]:
                     symbol=row["symbol"].strip(),
                     pattern=row["pattern"].strip(),
                     label=LabelValue(row["label"].strip()),
-                    window_start=date.fromisoformat(row["window_start"].strip()),
-                    window_start_precision=SourcePrecision(row["window_start_precision"].strip()),
+                    window_start=_optional_date(row.get("window_start")),
+                    window_start_precision=_optional_precision(row.get("window_start_precision")),
                     window_end=_optional_date(row.get("window_end")),
                     asof_date=date.fromisoformat(row["asof_date"].strip()),
                     expected_pivot_source_date=_optional_date(row.get("expected_pivot_source_date")),
