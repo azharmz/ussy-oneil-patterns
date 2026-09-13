@@ -41,6 +41,12 @@ class CupBodyAssessment:
 
 
 def assess_cup_body(geometry: CupBodyGeometry) -> CupBodyAssessment:
+    """Assess Cup morphology under P8 v0.2 proxy semantics.
+
+    Duration/depth remain hard theory gates. Roundedness/continuity numerical
+    proxies remain explicit research evidence but map to AMBIGUOUS rather than
+    absolute rejection after source-grounded P8 validation.
+    """
     faults: list[CupBodyFault] = []
 
     if geometry.duration_sessions < MIN_CUP_NO_HANDLE_DURATION_SESSIONS:
@@ -74,17 +80,17 @@ def assess_cup_body(geometry: CupBodyGeometry) -> CupBodyAssessment:
     if geometry.right_rim_to_left_rim_ratio < MIN_RIGHT_RIM_RECOVERY_RATIO:
         faults.append(CupBodyFault.WEAK_RIGHT_RIM_RECOVERY)
 
-    reject_research = {
-        CupBodyFault.SHALLOW_NON_CUP,
-        CupBodyFault.SHARP_V,
-        CupBodyFault.FRAGMENTED_BOTTOM,
-    }
-    ambiguous_research = {CupBodyFault.WEAK_RIGHT_RIM_RECOVERY}
-
-    if any(fault in reject_research for fault in faults):
+    if CupBodyFault.SHALLOW_NON_CUP in faults:
         state = CupBodyState.REJECTED
         research_pass = False
-    elif any(fault in ambiguous_research for fault in faults):
+    elif any(
+        fault in {
+            CupBodyFault.SHARP_V,
+            CupBodyFault.FRAGMENTED_BOTTOM,
+            CupBodyFault.WEAK_RIGHT_RIM_RECOVERY,
+        }
+        for fault in faults
+    ):
         state = CupBodyState.AMBIGUOUS
         research_pass = False
     else:
