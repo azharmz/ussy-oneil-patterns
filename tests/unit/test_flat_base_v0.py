@@ -68,11 +68,12 @@ def test_tight_research_band_can_recognize_after_hard_gates_pass():
     assert result.evidence["tightness_policy"] == "research_only"
 
 
-def test_wide_loose_fault_rejects_hard_gate_passer():
+def test_wide_loose_fault_is_ambiguous_after_hard_gates_pass():
     segment = _segment(duration=25, depth=0.10)
     result = assess_flat_base(_frame(segment, loose=True), segment)
-    assert result.state == FlatBaseState.REJECTED
+    assert result.state == FlatBaseState.AMBIGUOUS
     assert FlatBaseFault.WIDE_LOOSE in result.faults
+    assert result.evidence["wide_loose_state_policy"] == "AMBIGUOUS_NOT_HARD_REJECT"
 
 
 def test_intermediate_tightness_remains_ambiguous():
