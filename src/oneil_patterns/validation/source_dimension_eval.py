@@ -18,10 +18,15 @@ class MorphologyPrediction:
     #33 structure into this shape. Missing facts stay missing and are never inferred
     from the authoritative label.
 
-    `end_date` is the canonical detector's structural end. It must not be compared
-    to a source `window_end` unless the source end role is explicitly known to be a
-    structural-end landmark. The current corpus predates such a role field and may
-    use breakout dates as window ends.
+    `end_date` is the canonical detector's structural end unless
+    `candidate_semantics` explicitly says otherwise. It must not be compared to a
+    source `window_end` unless the source end role is explicitly known to be a
+    comparable structural-end landmark. The current corpus predates such a role
+    field and may use breakout dates as window ends.
+
+    `candidate_semantics` keeps confirmed structural candidates distinct from P8
+    experimental open-right-edge observations. The evaluator does not reward one
+    semantics class over another; both must be emitted label-agnostically first.
 
     `detector_faults` is diagnostic evidence only. The evaluator does not use fault
     codes to choose or promote a source match.
@@ -35,6 +40,7 @@ class MorphologyPrediction:
     pivot_level: float | None = None
     detector_status: str | None = None
     detector_faults: tuple[str, ...] = ()
+    candidate_semantics: str = "CONFIRMED_STRUCTURE"
 
 
 @dataclass(frozen=True, slots=True)
@@ -200,6 +206,7 @@ def evaluate_positive_development_label(
             f"source pivot {label.expected_pivot_level:g} preserved; comparison basis divides by explicit factor "
             f"{label.pivot_price_adjustment_factor:g} -> {label.comparison_pivot_level:g}"
         )
+    rationale.append(f"candidate semantics retained separately: {chosen.candidate_semantics}")
     if chosen.detector_status:
         rationale.append(f"detector status retained separately: {chosen.detector_status}")
 
