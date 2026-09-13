@@ -8,10 +8,10 @@ def test_committed_authoritative_seed_corpus_passes_frozen_schema():
     path = Path("data/p8/labels_v0.csv")
     labels = load_label_corpus_csv(path)
 
-    assert len(labels) == 6
+    assert len(labels) == 7
     assert {item.provenance for item in labels} == {LabelProvenance.AUTHORITATIVE_SOURCE}
     assert {item.split for item in labels} == {CorpusSplit.DEVELOPMENT, CorpusSplit.VALIDATION}
-    assert len([item for item in labels if item.split == CorpusSplit.DEVELOPMENT]) == 5
+    assert len([item for item in labels if item.split == CorpusSplit.DEVELOPMENT]) == 6
     assert len([item for item in labels if item.split == CorpusSplit.VALIDATION]) == 1
 
 
@@ -33,6 +33,12 @@ def test_source_precision_and_partial_dimensions_are_preserved():
     assert labels["FOUR"].window_end is None
     assert labels["FOUR"].expected_pivot_source_date is None
     assert labels["FOUR"].expected_pivot_level == 84.26
+
+    assert labels["TW"].window_start_precision == SourcePrecision.DAY
+    assert labels["TW"].window_start.isoformat() == "2024-10-15"
+    assert labels["TW"].window_end is None
+    assert labels["TW"].expected_pivot_source_date is None
+    assert labels["TW"].expected_pivot_level == 136.13
 
 
 def test_ctsh_source_pivot_is_immutable_but_comparison_basis_is_split_normalized():
