@@ -18,7 +18,7 @@ from oneil_patterns.morphology.cup_body_detector import (
     CupBodyState,
 )
 
-OPEN_RIGHT_EDGE_CNH_VERSION = "p8-open-right-edge-cnh-v0.1"
+OPEN_RIGHT_EDGE_CNH_VERSION = "p8-open-right-edge-cnh-v0.2"
 
 
 @dataclass(frozen=True, slots=True)
@@ -111,11 +111,16 @@ def observe_open_right_edge_cnh(
         if recovery_ratio < MIN_RIGHT_RIM_RECOVERY_RATIO:
             faults.append(CupBodyFault.WEAK_RIGHT_RIM_RECOVERY)
 
-    if any(f in hard_faults for f in faults):
+    if any(f in hard_faults for f in faults) or CupBodyFault.SHALLOW_NON_CUP in faults:
         state = CupBodyState.REJECTED
-    elif any(f in {CupBodyFault.SHALLOW_NON_CUP, CupBodyFault.SHARP_V, CupBodyFault.FRAGMENTED_BOTTOM} for f in faults):
-        state = CupBodyState.REJECTED
-    elif CupBodyFault.WEAK_RIGHT_RIM_RECOVERY in faults:
+    elif any(
+        f in {
+            CupBodyFault.SHARP_V,
+            CupBodyFault.FRAGMENTED_BOTTOM,
+            CupBodyFault.WEAK_RIGHT_RIM_RECOVERY,
+        }
+        for f in faults
+    ):
         state = CupBodyState.AMBIGUOUS
     else:
         state = CupBodyState.RECOGNIZED
