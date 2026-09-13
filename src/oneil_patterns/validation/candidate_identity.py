@@ -6,7 +6,7 @@ from typing import Iterable
 
 from .source_dimension_eval import MorphologyPrediction
 
-CANDIDATE_IDENTITY_AUDIT_VERSION = "p8-candidate-identity-audit-v0.3"
+CANDIDATE_IDENTITY_AUDIT_VERSION = "p8-candidate-identity-audit-v0.4"
 
 
 @dataclass(frozen=True, slots=True)
@@ -52,27 +52,27 @@ def _stable_identity_id(signature: tuple[str, ...]) -> str:
 
 
 def _is_right_edge_semantics(value: str) -> bool:
-    return value.startswith("OPEN_RIGHT_EDGE")
+    return "OPEN_RIGHT_EDGE" in value
 
 
 def _is_maturity_lifecycle(members: list[MorphologyPrediction]) -> bool:
-    """Return True only for the explicit TOO_SHORT -> mature right-edge path.
+    """Recognize only explicit TOO_SHORT -> mature right-edge evolution.
 
-    A structural identity can be known before a minimum-duration gate is met.
-    If the confirmed form is rejected for TOO_SHORT and an explicit right-edge
-    observation of the same structural signature later becomes non-rejected,
-    the state difference is a PIT lifecycle transition, not an identity clash.
-    Other status differences remain STATUS_CONFLICT.
+    Candidate provenance may prefix the right-edge marker (for example
+    `CONFIRMED_STRUCTURE:OPEN_RIGHT_EDGE...` or
+    `LOCAL_TURN_AUX:...:OPEN_RIGHT_EDGE...`). The lifecycle decision therefore
+    keys on the explicit OPEN_RIGHT_EDGE marker rather than a string prefix.
     """
-    confirmed = [item for item in members if item.candidate_semantics == "CONFIRMED_STRUCTURE"]
+    core = [item for item in members if not _is_right_edge_semantics(item.candidate_semantics)]
     right_edge = [item for item in members if _is_right_edge_semantics(item.candidate_semantics)]
-    if not confirmed or not right_edge:
+    if not core or not right_edge:
         return False
 
-    short_confirmed = [
+    short_core = [
         item
-        for item in confirmed
-        if item.detector_status and item.detector_status.endswith("_REJECTED")
+        for item in core
+        if item.detector_status
+        and item.detector_status.endswith("_REJECTED")
         and "TOO_SHORT" in item.detector_faults
     ]
     mature_right_edge = [
@@ -80,7 +80,7 @@ def _is_maturity_lifecycle(members: list[MorphologyPrediction]) -> bool:
         for item in right_edge
         if item.detector_status and not item.detector_status.endswith("_REJECTED")
     ]
-    return bool(short_confirmed and mature_right_edge)
+    return bool(short_core and mature_right_edge)
 
 
 def audit_candidate_identities(predictions: Iterable[MorphologyPrediction]) -> list[CandidateIdentityAudit]:
