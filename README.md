@@ -10,11 +10,12 @@ Canonical implementation repository for CAN SLIM workstream **#33 — O'Neil Pat
 > 2. read `docs/progress-board.md`;
 > 3. read `docs/decisions/p8-development-freeze-v1.md`;
 > 4. read `docs/decisions/p8-final-verdict.md`;
-> 5. inspect the latest commits only after the frozen records above are understood.
+> 5. read `docs/production-output-contract-v2.md` before building a downstream consumer;
+> 6. inspect the latest commits only after the frozen records above are understood.
 >
 > For #33/P8, this repository is the source of truth. The parent `azharmz/ussy-canslim-research` is roadmap/HQ and must not host a parallel pattern engine.
 >
-> Current state: core P8 is frozen with a **CONDITIONAL PASS**. Do not reopen morphology tuning from NFLX or from trading outcomes. Preserve ambiguity/fault evidence downstream.
+> Current state: core #33 is frozen with a **CONDITIONAL PASS** and production schema v2 is aligned to the exact frozen P8 adapter. Do not reopen morphology tuning from NFLX or from trading outcomes.
 
 ## Parent contract
 
@@ -50,7 +51,7 @@ THEORY
 
 ## Current phase
 
-**#33 core morphology engine frozen after P8 independent validation.**
+**#33 core morphology and production output are frozen after P8 independent validation.**
 
 P8 final verdict: **CONDITIONAL PASS / FROZEN WITH VALIDATION DEBT**.
 
@@ -71,12 +72,32 @@ Independent VALIDATION:
 
 The NFLX row had pivot/depth intentionally unscored before opening VALIDATION, so P8 does **not** claim every numeric CWH band has independent validation.
 
+## Frozen production contract
+
+Production schema: `oneil-pattern-output-v2`.
+Engine: `33-core-p8-frozen-v1`.
+Validation status: `P8_CONDITIONAL_PASS_FROZEN`.
+
+Production directly consumes the canonical frozen P8 predictions instead of rebuilding a separate detector path. Records preserve:
+
+- canonical `candidate_id`;
+- stable `base_id` (`core-base-id-v1`);
+- conservative exact-anchor `lineage_id` (`core-lineage-v1`);
+- `RECOGNIZED` / `AMBIGUOUS` / `REJECTED`;
+- candidate semantics;
+- structural signature;
+- pivot/depth when available;
+- detector faults and contract versions.
+
+The frozen v2 stream contains only the four core P8-validated families. Advanced families do not inherit this evidence level.
+
 See:
 
 - `docs/progress-board.md`
 - `docs/p8-labelled-validation-status.md`
 - `docs/decisions/p8-development-freeze-v1.md`
 - `docs/decisions/p8-final-verdict.md`
+- `docs/production-output-contract-v2.md`
 
 ## Core pattern scope with P8 evidence
 
