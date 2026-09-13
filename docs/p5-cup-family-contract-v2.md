@@ -41,7 +41,7 @@ The v2 state mapping changes only severity:
 
 No numerical threshold is moved.
 
-## DEVELOPMENT evidence
+## DEVELOPMENT Cup-no-Handle evidence
 
 AMZN 2023 is an authoritative Cup-without-Handle example. The source describes a September start, about 19 percent depth, and a 145.86 pivot. Source-dimension evaluator v0.4 selects the right-edge candidate beginning 2023-09-14 with trough 2023-10-26 because its measured depth is about 18.86 percent and its pivot is 145.86. That candidate carries only the research-only `SHARP_V` and `FRAGMENTED_BOTTOM` faults.
 
@@ -53,9 +53,23 @@ P8 separately preregisters an open-right-edge handle observation when the Cup bo
 
 The Cup right rim remains the pivot anchor, the horizon remains observation evidence, and handle faults remain explicit. FOUR 2024 becomes source-dimension MATCH under this representation while remaining `CUP_WITH_HANDLE_AMBIGUOUS` because `DEEP_HANDLE_EXCEPTIONAL` is still present.
 
+## Ambiguous Cup-body composition
+
+A research-ambiguous Cup body is not equivalent to pattern absence. For DEVELOPMENT family composition:
+
+- `CUP_REJECTED` cannot emit a CWH candidate;
+- `CUP_RECOGNIZED` with a recognized handle can emit `CUP_WITH_HANDLE_RECOGNIZED`;
+- `CUP_AMBIGUOUS` may compose into `CUP_WITH_HANDLE_AMBIGUOUS`;
+- any ambiguous handle also keeps the CWH candidate ambiguous;
+- body and handle faults are both retained.
+
+This revision resolved CTSH 2004 source-start representation. A January 23 canonical candidate now matches the source's January start at month precision and has a split-normalized pivot near the source comparison value 6.685. CTSH remains `CUP_WITH_HANDLE_AMBIGUOUS`; no morphology fault or threshold is suppressed.
+
+After this change all eight current DEVELOPMENT labels match every source-provided comparable dimension. Candidate multiplicity remains explicit and is not resolved from detector status.
+
 ## Outstanding debt
 
-CTSH 2004 still has unresolved source-start and left-rim semantics. Handle-depth numerical bands remain under P8 validation debt. Cup-no-Handle candidate identity and lineage effects remain to be audited. Additional authoritative Cup-no-Handle examples remain desirable before final freeze.
+Handle-depth numerical bands remain under P8 validation debt. Candidate identity/lineage and prefix stability remain to be audited. Additional authoritative Cup-no-Handle and CWH examples remain desirable before final freeze.
 
 ## Guardrails
 
@@ -64,3 +78,4 @@ No return-based tuning or VALIDATION data are used. NFLX remains locked until DE
 Decision records:
 - `docs/decisions/2026-09-13-p8-cup-roundedness-v0.2.md`
 - `docs/decisions/2026-09-13-p8-cwh-handle-high-role-v0.1.md`
+- `docs/decisions/2026-09-13-p8-cwh-ambiguous-cup-composition-v0.2.md`
