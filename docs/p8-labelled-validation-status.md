@@ -1,38 +1,32 @@
 # P8 Labelled Morphology Validation — Status
 
-Status: **DEVELOPMENT RECONCILIATION IN PROGRESS**
+Status: **CANONICAL DEVELOPMENT DISAGREEMENT ANALYSIS IN PROGRESS**
 
 ## Canonical boundary
 
 `azharmz/ussy-oneil-patterns` is the source of truth for #33/P8 implementation and validation.
 
-A useful but parallel P8 slice existed in parent `azharmz/ussy-canslim-research`. Its evidence-model improvements and source-grounded labels are being migrated here; its detector stack is not being adopted as a second canonical engine.
+The former parallel P8 implementation in parent `azharmz/ussy-canslim-research` is retained only as migration evidence. It is not a second canonical detector stack.
 
 Decision: `docs/decisions/2026-09-13-p8-cross-repo-reconciliation.md`.
 
 ## What is complete
 
-P8 has a machine-readable validation contract with:
+P8 now has:
 
-- labels: `POSITIVE`, `NEGATIVE`, `AMBIGUOUS`;
-- provenance: `AUTHORITATIVE_SOURCE`, `HUMAN_ANNOTATION`, `ADJUDICATED`;
-- corpus split: `DEVELOPMENT`, `VALIDATION`;
-- explicit source name/reference and `asof_date`;
-- source start precision (`DAY`, `MONTH`);
-- optional source dimensions: exact end and pivot date are not required when the source does not provide them;
-- explicit authoritative pivot price and optional pivot date;
+- machine-readable authoritative labels and provenance;
+- DEVELOPMENT / VALIDATION split with leakage guardrails;
+- source precision semantics (`DAY`, `MONTH`);
+- optional source dimensions rather than invented exact boundaries;
+- explicit authoritative pivot price plus optional pivot date;
 - explicit corporate-action comparison factor while preserving source price verbatim;
-- annotator required for human labels;
-- duplicate-id and development/validation leakage checks;
-- ambiguity preserved as a first-class validation outcome.
-
-Implementation:
-
-- `src/oneil_patterns/validation/labels.py`
-- `src/oneil_patterns/validation/evaluate.py`
-- `src/oneil_patterns/validation/corpus.py`
-- `tests/validation/test_labelled_validation_contract.py`
-- `tests/validation/test_p8_committed_corpus.py`
+- strict OHLCV routing `R2 -> Yahoo/yfinance -> Tiingo`;
+- canonical source-dimension evaluator `p8-source-dimension-eval-v0.2`;
+- canonical pivot adapter `p8-pivot-adapter-v0.2`;
+- canonical prediction adapter `p8-canonical-prediction-adapter-v0.2`;
+- DEVELOPMENT live runner and GitHub Actions artifact;
+- detector state/fault persistence;
+- diagnostic Cup-body ledger for structural-span analysis.
 
 ## Corpus state
 
@@ -47,60 +41,81 @@ Current authoritative examples:
 - `p8-label-0006`: AMZN — `CUP_WITHOUT_HANDLE` — DEVELOPMENT;
 - `p8-label-0002`: NFLX — `CUP_WITH_HANDLE` — VALIDATION, **LOCKED / UNTOUCHED**.
 
-The five DEVELOPMENT rows provide initial coverage across all four implemented core pattern families. That is a coverage milestone, not a validation verdict.
+The five DEVELOPMENT rows give initial coverage across all four implemented core pattern families. This is coverage, not a validation verdict.
 
-Reference-first acquisition remains active:
+## Canonical DEVELOPMENT batch — current state
 
-- `data/p8/reference_candidates_v0.csv` contains 31 authoritative candidates;
-- `data/p8/adjudication_queue_v0.csv` prioritizes source-grounded resolution;
-- `docs/p8-adjudication-batch-01.md` records the first promotions and held-back cases;
-- `docs/p8-ohlcv-source-policy.md` defines R2 vs external historical data routing.
+The current canonical v0.2 batch uses the strict source router. Repository Actions now has R2 and Tiingo secrets configured. SNPS is read from R2; CTSH, FOUR, SEI and AMZN fall through to Yahoo because those tickers are absent from the current frozen R2 membership snapshot. The fallback is therefore explicit source unavailability, not morphology-driven provider selection.
 
-Synthetic fixtures remain explicitly **ineligible** as authoritative P8 evidence.
-
-## Migrated parent-side evidence
-
-The former parallel parent implementation reported all five DEVELOPMENT examples as agreeing with source-provided dimensions, while all five selected detector candidates remained ambiguous:
+Current source-dimension result:
 
 ```text
-MATCH = 5
-AMBIGUOUS = 5
+MATCH                  = 2
+BOUNDARY_DISAGREEMENT  = 2
+LANDMARK_DISAGREEMENT  = 1
+MISS_PATTERN           = 0
 ```
 
-This result is retained only as migration evidence. It must be reproduced or contradicted by the canonical oneil landmark-first stack before it can support P8 decisions.
+| Example | Source-dimension result | Detector status | Current diagnosis |
+|---|---|---|---|
+| SNPS / FLAT_BASE | **MATCH** | `FLAT_BASE_REJECTED` | source start and 392.79 pivot match exactly; P2 emits a shorter span that trips `TOO_SHORT` + research-only `WIDE_LOOSE` |
+| CTSH / CUP_WITH_HANDLE | **BOUNDARY_DISAGREEMENT** | `CUP_WITH_HANDLE_RECOGNIZED` | split-normalized pivot is reproduced closely (~0.37% error), but canonical left-rim/start remains materially earlier than the source January-2004 anchor |
+| FOUR / CUP_WITH_HANDLE | **LANDMARK_DISAGREEMENT** | `CUP_WITH_HANDLE_RECOGNIZED` | February-2024 start is represented, but the persisted handle/pivot landmark for that span is ~72–75 rather than source 84.26; other ~84.90 pivots belong to earlier/ambiguous spans |
+| SEI / DOUBLE_BOTTOM | **MATCH** | `DOUBLE_BOTTOM_REJECTED` | late-July start and 12.74 pivot match; selected source-aligned W is rejected by the current duration gate (`TOO_SHORT`) |
+| AMZN / CUP_WITHOUT_HANDLE | **BOUNDARY_DISAGREEMENT** | `CUP_WITHOUT_HANDLE_RECOGNIZED` | cup family is now emitted; source 145.86 landmark exists in diagnostics, but current candidate spans start in February/April rather than the source September base |
 
-Known unresolved bands carried forward for targeted canonical testing:
+Detailed audit: `docs/decisions/2026-09-13-p8-development-morphology-audit-v0.md`.
 
-- Flat Base tightness / wide-loose;
-- Double Bottom second-trough undercut semantics, highlighted by SEI;
-- Cup-with-Handle handle-fault semantics, highlighted by FOUR;
-- Cup-family hierarchy / Cup-without-Handle vs CWH ambiguity, highlighted by AMZN;
-- general cross-pattern ambiguity;
-- canonical structural identity stability after any justified morphology revision.
+## Morphology-only verdicts from current evidence
 
-## Current verdict
+No current DEVELOPMENT example, by itself, justifies a threshold change.
 
-P8.4 is **READY FOR CANONICAL DEVELOPMENT-SIDE RE-EXECUTION** after the migrated schema/corpus passes CI.
+| Area | Current verdict |
+|---|---|
+| source window-end vs detector structural-end semantics | `KEEP` evaluator v0.2 behavior: unspecified source-end role is preserved but not scored |
+| Flat Base acceptance bands | `UNRESOLVED` — SNPS is source-aligned but the canonical structural span is truncated relative to the source-described base |
+| CWH start / left-rim semantics | `UNRESOLVED` — CTSH pivot is good but structural start is earlier than source wording |
+| CWH handle-high / pivot role | `UNRESOLVED` — FOUR has a source-aligned start but wrong canonical pivot landmark for that span |
+| Double Bottom duration gate | `UNRESOLVED` — SEI source-aligned W is rejected as too short |
+| Double Bottom second-trough undercut | `UNRESOLVED` — other SEI candidate scales repeatedly trip `NO_SECOND_TROUGH_UNDERCUT`; more authoritative DB examples are required |
+| Cup-without-Handle candidate-span semantics | `UNRESOLVED` — AMZN broader cup morphology is recognized, but the September-November source base is not emitted as the source-aligned instance |
+| BaseIdentity / Lineage freeze | `NOT READY` — candidate-span semantics remain unstable enough to affect identity grouping |
 
-Rules:
+## Central interpretation
 
-- DEVELOPMENT labels may be used for disagreement analysis and morphology-only revision;
-- VALIDATION labels remain untouched until a revised detector version is frozen;
-- absent source dimensions remain unscored rather than inferred;
-- source prices remain immutable; explicit factors only normalize the comparison basis;
-- no threshold may be tuned against post-pattern returns, CAGR, PF, win rate, FWD1, or entry performance;
-- no synthetic fixture may substitute for independent evidence;
-- low-coverage or contradictory morphology bands remain `UNRESOLVED`.
+`source-dimension MATCH` and detector acceptance are intentionally different layers.
+
+SNPS and SEI demonstrate that a detector-emitted candidate can agree with the authoritative source dimensions while still being `REJECTED` under current theory/research gates. Conversely, CTSH and FOUR show that a pattern family can be recognized while the structural instance or pivot landmark is not the source-described one.
+
+The next work therefore remains morphology/structure driven, not performance driven:
+
+1. expand targeted authoritative DEVELOPMENT evidence for the unresolved bands;
+2. compare multiple plausible structural scales explicitly rather than forcing one winner;
+3. determine whether disagreement is caused by P1/P2 span assembly, pattern landmark semantics, or actual morphology gates;
+4. only make a versioned detector/assembly revision when supported by multiple source-grounded examples;
+5. re-run all DEVELOPMENT labels after each justified revision;
+6. freeze detector + BaseIdentity/Lineage only after structural churn is acceptable;
+7. open NFLX VALIDATION exactly once after DEVELOPMENT freeze.
+
+## Guardrails
+
+- DEVELOPMENT only during tuning;
+- NFLX VALIDATION remains locked and untouched;
+- no return, CAGR, PF, win-rate, FWD1, breakout-performance, or entry-optimization input;
+- no source precision may be invented from detector output;
+- authoritative source prices remain immutable;
+- corporate-action normalization must remain explicit and versioned;
+- synthetic fixtures are regression-only and cannot substitute for authoritative P8 evidence;
+- low-coverage or contradictory bands remain `UNRESOLVED`;
+- #34 must not begin until P8/#33 has a defensible final verdict.
 
 ## Completion requirement
 
 P8 may be frozen only after:
 
-1. the migrated canonical corpus/schema is CI-green;
-2. the five DEVELOPMENT examples are evaluated through the canonical oneil stack;
-3. disagreement causes are classified explicitly;
-4. any morphology-driven revisions are versioned and frozen;
-5. targeted corpus expansion closes or documents unresolved bands;
-6. untouched NFLX VALIDATION is evaluated exactly once after DEVELOPMENT freeze;
-7. coverage gaps and remaining ambiguity are reported explicitly;
-8. the final `KEEP` / `REVISE` / `UNRESOLVED` verdict is recorded before #34 begins.
+1. disagreement causes are classified explicitly across a broader DEVELOPMENT corpus;
+2. any morphology-driven revisions are versioned and frozen;
+3. targeted corpus expansion closes or explicitly documents unresolved bands;
+4. BaseIdentity/Lineage churn is acceptable under the revised candidate semantics;
+5. untouched NFLX VALIDATION is evaluated exactly once after DEVELOPMENT freeze;
+6. final `KEEP` / `REVISE` / `UNRESOLVED` verdicts are recorded before #34 begins.
