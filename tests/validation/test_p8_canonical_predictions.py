@@ -3,8 +3,11 @@ from datetime import date, timedelta
 import pandas as pd
 import pytest
 
+from oneil_patterns.morphology.cup_body_detector import CupBodyState
+from oneil_patterns.morphology.cup_family import HandleState
 from oneil_patterns.validation.canonical_predictions import (
     _candidate_id,
+    _cwh_status,
     _prediction,
     _right_edge_context_complete,
     extract_core_morphology_predictions,
@@ -46,6 +49,12 @@ def test_prediction_retains_faults_as_diagnostic_evidence():
         detector_faults=("NO_SECOND_TROUGH_UNDERCUT",),
     )
     assert item.detector_faults == ("NO_SECOND_TROUGH_UNDERCUT",)
+
+
+def test_ambiguous_cup_body_never_composes_to_recognized_cwh():
+    assert _cwh_status(CupBodyState.AMBIGUOUS, HandleState.RECOGNIZED) == "CUP_WITH_HANDLE_AMBIGUOUS"
+    assert _cwh_status(CupBodyState.AMBIGUOUS, HandleState.AMBIGUOUS) == "CUP_WITH_HANDLE_AMBIGUOUS"
+    assert _cwh_status(CupBodyState.RECOGNIZED, HandleState.RECOGNIZED) == "CUP_WITH_HANDLE_RECOGNIZED"
 
 
 def test_cup_no_handle_context_requires_minimum_observed_sessions_after_rim():
