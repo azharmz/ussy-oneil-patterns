@@ -27,7 +27,7 @@ def test_double_bottom_research_ambiguity_preserves_provenance():
     native = assess_double_bottom(_by_name(double_bottom_fixtures())["shallow_undercut"].geometry)
     envelope = normalize_double_bottom(native)
     assert envelope.status == NormalizedStatus.AMBIGUOUS
-    assert envelope.contract_version == "double-bottom-v2"
+    assert envelope.contract_version == "double-bottom-v3"
     assert envelope.faults[0].provenance == RuleProvenance.RESEARCH
 
 
@@ -40,7 +40,7 @@ def test_cup_research_ambiguity_preserves_provenance():
 
 
 def test_ascending_theory_rejection_and_research_ambiguity_remain_distinct():
-    fixtures = _by_name(ascending_base_fixtures())
+    fixtures = _by_name(ascending_bases := ascending_base_fixtures())
     hard = normalize_ascending_base(assess_ascending_base(fixtures["nonascending_trough"].geometry))
     soft = normalize_ascending_base(assess_ascending_base(fixtures["irregular_depth"].geometry))
 
