@@ -17,7 +17,7 @@ Last updated: 2026-09-13
 | P3 Flat Base | FROZEN CORE | `flat-base-v2` |
 | P4 Double Bottom | FROZEN CORE | `double-bottom-v3`; 35-session gate retained |
 | P5 Cup family | FROZEN CORE | `cup-family-v2`; explicit right-edge CWH/CNH |
-| P6 Advanced patterns | COMPLETE — CONDITIONAL PASS / FROZEN v2 | `ASCENDING_BASE` + `BASE_ON_BASE`; source-grounded conservative semantics, explicit validation debt, not P8-equivalent |
+| P6 Advanced patterns | COMPLETE — VALIDATION FAIL / FROZEN | authoritative 10-row DEVELOPMENT + untouched 2-row one-shot VALIDATION completed; not production-validated |
 | P7 Fault/ambiguity layer | COMPLETE | ambiguity/fault states persisted |
 | P8 Labelled morphology validation | COMPLETE — CONDITIONAL PASS | 20 DEVELOPMENT examples + one frozen NFLX VALIDATION execution |
 | P9 Productionization | COMPLETE / FROZEN v2 | production directly consumes frozen P8 canonical predictions; no duplicate detector path |
@@ -41,20 +41,87 @@ Freeze record: `docs/decisions/p8-development-freeze-v1.md`.
 Final verdict: `docs/decisions/p8-final-verdict.md`.
 Production contract: `docs/production-output-contract-v2.md`.
 
-## Frozen P6 advanced stack
+## P6 authoritative validation cycle
 
-- advanced contract: `advanced-patterns-v2`
-- Ascending Base adapter contract: `ascending-base-v2`
-- Base-on-Base adapter contract: `advanced-patterns-v2`
-- source audit: `docs/p6-source-audit-v2.md`
-- P6 contract: `docs/p6-advanced-patterns-contract-v2.md`
-- final verdict: `docs/decisions/p6-final-verdict.md`
+P6 advanced families:
 
-P6 v2 removes the old research-only state thresholds (`0.05` pullback-depth dispersion and Base-on-Base `0.50` / `0.75` close fractions). They must not be restored or retuned from returns.
+- `ASCENDING_BASE`
+- `BASE_ON_BASE`
 
-P6 remains outside `oneil-pattern-output-v2`. It does not inherit the independent P8 evidence level.
+The earlier source-grounded v2 conditional verdict was superseded by a full authoritative validation cycle. Frozen P3/P4/P5/P8 core was not reopened.
 
-## DEVELOPMENT evidence at freeze
+### DEVELOPMENT freeze
+
+Corpus: `data/p6/labels_v0.csv` DEVELOPMENT split.
+
+Coverage:
+
+- ASCENDING_BASE: 5 authoritative positives
+- BASE_ON_BASE: 5 authoritative positives
+
+Frozen evidence:
+
+```text
+workflow run                   = 34748254127
+artifact id                    = 10315076061
+artifact digest                = sha256:332f7fc9aab753280b386491cb59d3a48ad4f258374c7e40b804309eb93425e8
+repository tests               = 235 passed
+source-dimension MATCH         = 10 / 10
+candidate STATUS_CONFLICT      = 0
+```
+
+Detector-state evidence at DEVELOPMENT freeze:
+
+```text
+ASCENDING_BASE_RECOGNIZED      = 1
+ASCENDING_BASE_AMBIGUOUS       = 1
+ASCENDING_BASE_REJECTED        = 3
+BASE_ON_BASE_RECOGNIZED        = 1
+BASE_ON_BASE_AMBIGUOUS         = 4
+```
+
+Freeze record: `docs/decisions/p6-development-freeze-v1.md`.
+
+### Untouched one-shot VALIDATION
+
+Locked before freeze:
+
+- `p6-label-0011` — STT `ASCENDING_BASE`
+- `p6-label-0012` — C `BASE_ON_BASE`
+
+One-shot execution:
+
+```text
+commit                         = 2c10165e67c1486459ddf191021243ad70e90f7b
+workflow run                   = 34750413835
+artifact id                    = 10315775412
+artifact digest                = sha256:618c72a7accbb9b5434db9040e2bad645bf0435de21b32ffac019bfe4d83ca16
+source-dimension MATCH         = 2 / 2
+candidate STATUS_CONFLICT      = 0
+STT detector state             = ASCENDING_BASE_REJECTED
+C detector state               = BASE_ON_BASE_AMBIGUOUS
+```
+
+The one-shot workflow path was removed in commit `da251cee5f8ffbc3038a198950d3b824f4b4d458` immediately after execution.
+
+### Final P6 verdict
+
+**VALIDATION FAIL / FROZEN — NOT PRODUCTION-VALIDATED**.
+
+The authoritative source dimensions matched, but neither untouched positive validation example was recognized by frozen morphology. Under the same validation discipline used for core patterns, sparse pivot/pattern agreement cannot override rejected/ambiguous detector state.
+
+Consequences:
+
+- P6 remains outside `oneil-pattern-output-v2`;
+- STT/C cannot be reused as untouched validation in a future cycle;
+- no post-validation threshold or severity tuning is allowed;
+- Base-on-Base “mostly above” remains unresolved because authoritative guidance supplies no universal numeric overlap boundary;
+- a new cycle requires new authoritative morphology-rich DEVELOPMENT evidence and a new untouched VALIDATION set;
+- P3/P4/P5/P8 remain frozen.
+
+Final verdict: `docs/decisions/p6-final-verdict.md`.
+
+## P8 DEVELOPMENT evidence at freeze
 
 Canonical corpus: `data/p8/labels_v0.csv`.
 
@@ -88,7 +155,7 @@ STATUS_CONFLICT               = 0
 Freeze evidence commit: `2ed3dadcc354f56f4cb27401248daef60b1627fa`.
 Freeze workflow run: `34740880269`.
 
-## Independent VALIDATION
+## P8 Independent VALIDATION
 
 The locked NFLX `CUP_WITH_HANDLE` case was opened exactly once after freeze.
 
@@ -131,33 +198,9 @@ What remains debt:
 
 No frozen morphology threshold may now be changed from the NFLX result.
 
-## Final P6 verdict
-
-**CONDITIONAL PASS / FROZEN WITH VALIDATION DEBT** for `ASCENDING_BASE` and `BASE_ON_BASE`.
-
-What passed:
-
-- source audit for both advanced families;
-- removal of unsupported research-only numerical state gates;
-- source-grounded Ascending Base 3-pullback/higher-high/higher-low semantics and 6%–25% outer ambiguity guardrail;
-- conservative Base-on-Base classification that recognizes the unambiguous entirely-above case and preserves partial overlap as ambiguous;
-- PIT/future-extension invariance;
-- versioned normalized fault/adapter contracts;
-- full repository regression: **227 tests passed** on workflow run `34746587586`, commit `642cfe36aeadf0a488e3478bbfec8cd1e0dfdf07`.
-
-What remains debt:
-
-- no independent P6 labelled morphology corpus comparable to P8;
-- no source-defined numeric boundary for Base-on-Base “mostly above”, so partial overlap remains ambiguous;
-- Ascending Base 45–80 observed-session translation of 9–16 weeks lacks independent boundary validation;
-- market weakness/prior uptrend/moving-average support and Base-on-Base initial breakout gain/stage logic remain context rather than pure morphology gates;
-- P6 advanced families remain excluded from frozen production v2.
-
-Do not tune P6 from returns or use P6 work to reopen P3/P4/P5/P8.
-
 ## P9 production alignment
 
-The old first-pass production path was replaced because it still carried `P8_BLOCKED_ON_CORPUS` and v1 detector contracts. Production v2 now calls the exact canonical P8 prediction adapter rather than rebuilding landmarks/morphology independently.
+Production v2 calls the exact canonical P8 prediction adapter rather than rebuilding landmarks/morphology independently.
 
 Frozen production output includes only the four P8-validated core families and persists:
 
@@ -173,13 +216,11 @@ Frozen production output includes only the four P8-validated core families and p
 - detector faults;
 - versioned P8 and production contracts.
 
-Lineage v1 uses exact anchors only—no fuzzy date/price tolerance—so it intentionally prefers under-merging to unstable lineage churn.
-
 Production alignment regression suite: **224 tests passed** on workflow run `34741587492`.
 
 ## Downstream contract / stop boundary
 
-#33 core is implementation-complete and frozen for the four independently validated core families. P6 advanced morphology is also frozen separately at a conditional verdict, but remains outside core production v2 because its evidence level is lower.
+#33 core is implementation-complete and frozen for the four P8 core families. P6 has now completed its requested same-standard authoritative validation cycle and is frozen with a validation-fail verdict.
 
 The next core work item remains **#34 Theory-faithful Candidate Generator**, which belongs in the CAN SLIM parent workstream rather than further #33 morphology tuning.
 
@@ -191,4 +232,4 @@ A downstream #34 consumer must preserve:
 - detector faults;
 - source/validation provenance where applicable.
 
-`AMBIGUOUS` must not be silently converted into either recognized or absent morphology. #34 must not reopen P8 or P6 based on returns, CAGR, PF, FWD1, breakout outcomes or entry optimization.
+`AMBIGUOUS` must not be silently converted into either recognized or absent morphology. #34 must not reopen P8 or the frozen P6 cycle based on returns, CAGR, PF, FWD1, breakout outcomes or entry optimization.
