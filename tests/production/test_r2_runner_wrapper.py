@@ -37,4 +37,4 @@ def test_run_from_r2_delegates_to_canonical_loader(monkeypatch):
     }
     assert result.records == ()
     assert result.manifest.asof_date == "2026-09-12"
-    assert result.manifest.labelled_validation_status == "P8_BLOCKED_ON_CORPUS"
+    assert result.manifest.labelled_validation_status == "P8_CONDITIONAL_PASS_FROZEN"
