@@ -18,7 +18,7 @@ from oneil_patterns.morphology.cup_body_detector import (
     CupBodyState,
 )
 
-OPEN_RIGHT_EDGE_CNH_VERSION = "p8-open-right-edge-cnh-v0.2"
+OPEN_RIGHT_EDGE_CNH_VERSION = "p8-open-right-edge-cnh-v0.3"
 
 
 @dataclass(frozen=True, slots=True)
@@ -147,6 +147,13 @@ def enumerate_open_right_edge_cnh(
     *,
     asof_date: date,
 ) -> list[OpenRightEdgeCupNoHandleObservation]:
+    """Enumerate only cups whose post-trough structural right edge is still open.
+
+    Once a later confirmed P1 swing high exists after a trough, that cup has a
+    structural recovery/right-rim candidate and must be evaluated through the
+    confirmed cup-body path. Extending the same old trough to the current as-of
+    horizon would create a false lifecycle/state collision.
+    """
     known = [item for item in landmarks if item.confirmed_date <= asof_date]
     highs = [item for item in known if item.type == LandmarkType.SWING_HIGH]
     lows = [item for item in known if item.type == LandmarkType.SWING_LOW]
@@ -154,6 +161,8 @@ def enumerate_open_right_edge_cnh(
     for high in highs:
         for low in lows:
             if low.price_date <= high.price_date:
+                continue
+            if any(later.price_date > low.price_date for later in highs):
                 continue
             try:
                 out.append(observe_open_right_edge_cnh(frame, high, low, asof_date=asof_date))
