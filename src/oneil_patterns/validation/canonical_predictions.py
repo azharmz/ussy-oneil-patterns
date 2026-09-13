@@ -30,7 +30,7 @@ from .pivot_adapter import (
 )
 from .source_dimension_eval import MorphologyPrediction
 
-PREDICTION_ADAPTER_VERSION = "p8-canonical-prediction-adapter-v0.1"
+PREDICTION_ADAPTER_VERSION = "p8-canonical-prediction-adapter-v0.2"
 
 
 def _session_index(frame: pd.DataFrame) -> dict[date, int]:
@@ -59,6 +59,7 @@ def _prediction(
     pivot_level: float | None,
     pivot_date: date | None,
     detector_status: str,
+    detector_faults: tuple[str, ...] = (),
 ) -> MorphologyPrediction:
     return MorphologyPrediction(
         candidate_id=_candidate_id(pattern, start, end, pivot_date),
@@ -68,16 +69,12 @@ def _prediction(
         pivot_source_date=pivot_date,
         pivot_level=pivot_level,
         detector_status=detector_status,
+        detector_faults=detector_faults,
     )
 
 
 def _right_edge_context_complete(index: dict[date, int], *, right_rim: date, asof_date: date) -> bool:
-    """Preregistered daily-data context gate for Cup-without-Handle.
-
-    A no-handle classification is eligible only after at least the minimum
-    handle-duration number of observed sessions exists after the right rim.
-    This is a morphology/context rule, not a breakout or return rule.
-    """
+    """Preregistered daily-data context gate for Cup-without-Handle."""
     if right_rim not in index or asof_date not in index:
         return False
     return index[asof_date] - index[right_rim] >= MIN_HANDLE_DURATION_SESSIONS - 1
@@ -86,9 +83,8 @@ def _right_edge_context_complete(index: dict[date, int], *, right_rim: date, aso
 def extract_core_morphology_predictions(frame: pd.DataFrame, *, asof_date: date) -> list[MorphologyPrediction]:
     """Emit P8 predictions from the canonical frozen oneil landmark-first stack.
 
-    This mirrors P1-P5 morphology construction while retaining pattern-specific
-    pivot facts before production serialization. It does not use labels, future
-    bars, breakout outcomes, returns, or the superseded parent detector stack.
+    Fault codes are retained as diagnostic evidence but do not change candidate
+    ranking or source-dimension evaluation.
     """
     if frame.empty:
         return []
@@ -98,7 +94,6 @@ def extract_core_morphology_predictions(frame: pd.DataFrame, *, asof_date: date)
     if (dates > asof_date).any():
         raise ValueError("canonical P8 extractor received future bars")
     if asof_date not in set(dates):
-        # Evaluate at the latest available completed session <= requested as-of.
         eligible = dates[dates <= asof_date]
         if eligible.empty:
             return []
@@ -113,7 +108,6 @@ def extract_core_morphology_predictions(frame: pd.DataFrame, *, asof_date: date)
 
     predictions: list[MorphologyPrediction] = []
 
-    # Flat Base: retain every structurally evaluable segment and its native state.
     for segment in segment_base_candidates(ordered, landmarks, asof_date=asof_date):
         assessment = assess_flat_base(ordered, segment)
         pivot = flat_base_pivot(segment)
@@ -125,10 +119,10 @@ def extract_core_morphology_predictions(frame: pd.DataFrame, *, asof_date: date)
                 pivot_level=pivot.pivot_level,
                 pivot_date=pivot.pivot_source_date,
                 detector_status=assessment.state.value,
+                detector_faults=tuple(item.value for item in assessment.faults),
             )
         )
 
-    # Double Bottom: high-low-high-low-(high) native sequence.
     for i in range(len(landmarks) - 4):
         marks = landmarks[i : i + 5]
         expected = [
@@ -156,11 +150,10 @@ def extract_core_morphology_predictions(frame: pd.DataFrame, *, asof_date: date)
                 pivot_level=pivot.pivot_level,
                 pivot_date=pivot.pivot_source_date,
                 detector_status=assessment.state.value,
+                detector_faults=tuple(item.value for item in assessment.faults),
             )
         )
 
-    # Cup family: a recognized cup body may become CWH, ambiguous CWH attempt,
-    # or Cup-without-Handle only after explicit right-edge context is complete.
     for i in range(len(landmarks) - 2):
         body_marks = landmarks[i : i + 3]
         if [mark.type for mark in body_marks] != [
@@ -185,9 +178,6 @@ def extract_core_morphology_predictions(frame: pd.DataFrame, *, asof_date: date)
 
         if handle_geometry is not None and handle_assessment is not None:
             pivot = cup_with_handle_pivot(geometry, handle_geometry)
-            # An actual handle attempt retains the CWH family identity even when
-            # the native handle assessment is ambiguous/rejected; the status is
-            # kept separately so source MATCH cannot hide detector uncertainty.
             detector_status = (
                 "CUP_WITH_HANDLE_RECOGNIZED"
                 if handle_assessment.state == HandleState.RECOGNIZED
@@ -201,6 +191,7 @@ def extract_core_morphology_predictions(frame: pd.DataFrame, *, asof_date: date)
                     pivot_level=pivot.pivot_level,
                     pivot_date=pivot.pivot_source_date,
                     detector_status=detector_status,
+                    detector_faults=tuple(item.value for item in handle_assessment.faults),
                 )
             )
             continue
@@ -218,6 +209,5 @@ def extract_core_morphology_predictions(frame: pd.DataFrame, *, asof_date: date)
                 )
             )
 
-    # Deterministic de-duplication across fused landmark paths.
     by_id = {item.candidate_id: item for item in predictions}
     return [by_id[key] for key in sorted(by_id)]
