@@ -21,6 +21,7 @@ class MorphologyPrediction:
     detector_status: str | None = None
     detector_faults: tuple[str, ...] = ()
     candidate_semantics: str = "CONFIRMED_STRUCTURE"
+    structural_signature: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -174,9 +175,6 @@ def evaluate_positive_development_label(
         pivot_ok = pivot_date_ok and pivot_price_ok
         morphology_ok = depth_ok
 
-        # This tuple contains only dimensions supplied by the authoritative
-        # source (plus their explicit tolerances). Detector state, candidate
-        # semantics and unscored structural end dates are intentionally absent.
         source_rank = (
             0 if boundary_ok else 1,
             0 if pivot_ok else 1,
