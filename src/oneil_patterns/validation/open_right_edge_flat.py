@@ -18,7 +18,7 @@ from oneil_patterns.morphology.flat_base import (
     FlatBaseState,
 )
 
-OPEN_RIGHT_EDGE_FLAT_VERSION = "p8-open-right-edge-flat-v0.1"
+OPEN_RIGHT_EDGE_FLAT_VERSION = "p8-open-right-edge-flat-v0.2"
 
 
 @dataclass(frozen=True, slots=True)
@@ -46,7 +46,9 @@ def observe_open_right_edge_flat(
     """Assess a Flat Base observation from a confirmed start high through T.
 
     `asof_date` is an observation horizon, never a fabricated structural turn.
-    The existing Flat Base thresholds are reused unchanged.
+    The Flat Base hard gates and research bands are reused unchanged. Under the
+    P8 v0.2 state policy, a research-only WIDE_LOOSE fault is ambiguous rather
+    than a hard rejection when duration/depth hard gates pass.
     """
     if start.type != LandmarkType.SWING_HIGH:
         raise ValueError("open-right-edge Flat observation requires a SWING_HIGH start")
@@ -84,10 +86,13 @@ def observe_open_right_edge_flat(
     upper_band_fraction = float((region["close"] >= observed_high * 0.95).mean())
 
     faults: list[FlatBaseFault] = []
+    hard_failure = False
     if duration < MIN_DURATION_SESSIONS:
         faults.append(FlatBaseFault.TOO_SHORT)
+        hard_failure = True
     if depth > MAX_DEPTH_PCT:
         faults.append(FlatBaseFault.TOO_DEEP)
+        hard_failure = True
 
     wide_loose = (
         normalized_range >= WIDE_LOOSE_MIN_NORMALIZED_RANGE
@@ -101,8 +106,10 @@ def observe_open_right_edge_flat(
         and close_dispersion <= TIGHT_MAX_CLOSE_DISPERSION
     )
 
-    if duration < MIN_DURATION_SESSIONS or depth > MAX_DEPTH_PCT or wide_loose:
+    if hard_failure:
         state = FlatBaseState.REJECTED
+    elif wide_loose:
+        state = FlatBaseState.AMBIGUOUS
     elif tight:
         state = FlatBaseState.RECOGNIZED
     else:
