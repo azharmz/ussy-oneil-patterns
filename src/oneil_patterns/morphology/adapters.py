@@ -14,7 +14,7 @@ def normalize_flat_base(assessment: FlatBaseAssessment) -> PatternAssessmentEnve
         pattern="FLAT_BASE",
         native_state=assessment.state,
         native_faults=assessment.faults,
-        contract_version="flat-base-v1",
+        contract_version="flat-base-v2",
     )
 
 
@@ -23,7 +23,7 @@ def normalize_double_bottom(assessment: DoubleBottomAssessment) -> PatternAssess
         pattern="DOUBLE_BOTTOM",
         native_state=assessment.state,
         native_faults=assessment.faults,
-        contract_version="double-bottom-v1",
+        contract_version="double-bottom-v2",
     )
 
 
@@ -32,7 +32,7 @@ def normalize_cup_body(assessment: CupBodyAssessment) -> PatternAssessmentEnvelo
         pattern="CUP_BODY",
         native_state=assessment.state,
         native_faults=assessment.faults,
-        contract_version="cup-family-v1",
+        contract_version="cup-family-v2",
     )
 
 
@@ -41,7 +41,7 @@ def normalize_handle(assessment: HandleAssessment) -> PatternAssessmentEnvelope:
         pattern="HANDLE",
         native_state=assessment.state,
         native_faults=assessment.faults,
-        contract_version="cup-family-v1",
+        contract_version="cup-family-v2",
     )
 
 
@@ -50,7 +50,7 @@ def normalize_cup_family(state: CupFamilyState) -> PatternAssessmentEnvelope:
         pattern="CUP_FAMILY",
         native_state=state,
         native_faults=(),
-        contract_version="cup-family-v1",
+        contract_version="cup-family-v2",
     )
 
 
