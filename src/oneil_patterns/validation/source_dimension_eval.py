@@ -22,6 +22,9 @@ class MorphologyPrediction:
     to a source `window_end` unless the source end role is explicitly known to be a
     structural-end landmark. The current corpus predates such a role field and may
     use breakout dates as window ends.
+
+    `detector_faults` is diagnostic evidence only. The evaluator does not use fault
+    codes to choose or promote a source match.
     """
 
     candidate_id: str
@@ -31,6 +34,7 @@ class MorphologyPrediction:
     pivot_source_date: date | None = None
     pivot_level: float | None = None
     detector_status: str | None = None
+    detector_faults: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -86,9 +90,6 @@ def _boundary_validation_state(label: LabelEvidence) -> str:
     if label.window_end is None:
         prefix = "START_ONLY_SOURCE_ANCHOR"
     else:
-        # Current corpus `window_end` is a source-window boundary and can be a
-        # breakout date. Until a versioned role is recorded, only start is
-        # structurally comparable to MorphologyPrediction.start_date.
         prefix = "START_SCORED_SOURCE_END_ROLE_UNSPECIFIED"
     return f"{prefix}_{label.window_start_precision.value}_START"
 
@@ -101,20 +102,7 @@ def evaluate_positive_development_label(
     pivot_date_tolerance_days: int = 3,
     pivot_price_tolerance_pct: float = 0.01,
 ) -> SourceDimensionAgreement:
-    """Compare one authoritative DEVELOPMENT label only on comparable dimensions.
-
-    The authoritative label never supplies missing detector facts. MONTH precision
-    is scored at month precision. A source pivot remains immutable; an explicit
-    corporate-action adjustment factor only changes the comparison basis.
-
-    The legacy corpus `window_end` is deliberately not scored against detector
-    `end_date` because the source window may terminate at breakout rather than at
-    a structural landmark. This is fail-closed evaluator semantics: an end anchor
-    becomes scoreable only after its role is explicitly versioned.
-
-    Detector ambiguity is reported but does not silently turn a source-dimension
-    MATCH into a clean morphology verdict.
-    """
+    """Compare one authoritative DEVELOPMENT label only on comparable dimensions."""
 
     if label.split != CorpusSplit.DEVELOPMENT:
         raise ValueError("source-dimension evaluator is locked to DEVELOPMENT labels")
@@ -143,10 +131,6 @@ def evaluate_positive_development_label(
     ranked: list[tuple[tuple, MorphologyPrediction, tuple]] = []
     for prediction in same_pattern:
         start_ok, start_error = _start_match(label, prediction, boundary_tolerance_days)
-
-        # Do not equate a source-window endpoint with canonical structural end.
-        # `window_end` remains preserved in LabelEvidence but is not scored until
-        # the corpus carries an explicit semantic role for that end anchor.
         end_error = None
         end_ok = True
 
