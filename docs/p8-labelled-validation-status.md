@@ -4,35 +4,32 @@ Status: **CANONICAL DEVELOPMENT REVISION IN PROGRESS**
 
 ## Canonical boundary
 
-`azharmz/ussy-oneil-patterns` is the source of truth for #33/P8 implementation and validation.
+`azharmz/ussy-oneil-patterns` is the source of truth for #33/P8 implementation and validation. The former parallel P8 implementation in `azharmz/ussy-canslim-research` is migration evidence only.
 
-The former parallel P8 implementation in parent `azharmz/ussy-canslim-research` is retained only as migration evidence. It is not a second canonical detector stack.
+NFLX VALIDATION remains locked and untouched.
 
-## What is complete
+## Infrastructure state
 
 P8 now has:
 
-- machine-readable authoritative labels and provenance;
+- authoritative machine-readable labels and provenance;
 - DEVELOPMENT / VALIDATION split with leakage guardrails;
-- source precision semantics (`DAY`, `MONTH`);
-- optional source dimensions rather than invented exact boundaries;
-- explicit authoritative pivot price plus optional pivot date;
-- explicit corporate-action comparison factor while preserving source price verbatim;
+- optional source dimensions instead of invented boundaries;
+- `DAY` / `MONTH` source precision;
+- source pivot normalization while preserving source values;
+- optional source depth comparison;
 - strict OHLCV routing `R2 -> Yahoo/yfinance -> Tiingo`;
-- canonical source-dimension evaluator `p8-source-dimension-eval-v0.2`;
-- canonical pivot adapter `p8-pivot-adapter-v0.2`;
-- canonical live DEVELOPMENT runner and Actions artifact;
-- detector state/fault persistence;
-- Cup-body and P1/P2 structural diagnostic ledgers;
-- explicit `candidate_semantics` separating confirmed structures from right-edge observations;
-- Flat Base v2 DEVELOPMENT revision;
-- OPEN_RIGHT_EDGE Flat PIT/prefix regression coverage.
+- source-dimension evaluator `p8-source-dimension-eval-v0.4`;
+- canonical prediction adapter with explicit candidate semantics;
+- OPEN_RIGHT_EDGE Flat, Handle and Cup-no-Handle observations;
+- live DEVELOPMENT Actions runner/artifact;
+- persisted detector state/fault evidence.
 
-## Corpus state
+## Corpus
 
-Canonical committed corpus: `data/p8/labels_v0.csv`.
+Canonical file: `data/p8/labels_v0.csv`.
 
-### DEVELOPMENT
+DEVELOPMENT:
 
 1. SNPS — `FLAT_BASE`
 2. CTSH — `CUP_WITH_HANDLE`
@@ -40,91 +37,77 @@ Canonical committed corpus: `data/p8/labels_v0.csv`.
 4. SEI — `DOUBLE_BOTTOM`
 5. AMZN — `CUP_WITHOUT_HANDLE`
 6. TW — `FLAT_BASE`
+7. NVDA — `DOUBLE_BOTTOM`
+8. SPOT — `DOUBLE_BOTTOM`
 
-### VALIDATION
+VALIDATION:
 
 - NFLX — `CUP_WITH_HANDLE` — **LOCKED / UNTOUCHED**
 
-The six DEVELOPMENT examples span all four implemented core pattern families. This is coverage, not a final validation verdict.
-
-## Data-source state
-
-R2 and Tiingo Actions secrets are configured.
-
-- SNPS resolves from R2.
-- CTSH, FOUR, SEI, AMZN and TW currently fall through to Yahoo because those tickers are absent from the frozen R2 membership snapshot.
-- fallback is therefore explicit source unavailability, never morphology-driven provider selection.
-
-## Current canonical DEVELOPMENT result
-
-After multi-turn assembly, evaluator v0.2, OPEN_RIGHT_EDGE Flat observations and Flat Base v2 state semantics:
+## Latest live DEVELOPMENT result
 
 ```text
-MATCH                  = 3
-BOUNDARY_DISAGREEMENT  = 2
-LANDMARK_DISAGREEMENT  = 1
+MATCH                  = 7
+BOUNDARY_DISAGREEMENT  = 1
+LANDMARK_DISAGREEMENT  = 0
 MISS_PATTERN           = 0
 ```
 
-| Example | Source-dimension result | Current detector evidence | Diagnosis |
+| Example | Agreement | Detector evidence | Diagnosis |
 |---|---|---|---|
-| SNPS / FLAT_BASE | **MATCH** | source-aligned OPEN_RIGHT_EDGE candidate is `FLAT_BASE_AMBIGUOUS`; only `WIDE_LOOSE` remains | duration/depth pass; research-only tightness band remains evidence, not hard rejection |
-| TW / FLAT_BASE | **MATCH** | source-aligned OPEN_RIGHT_EDGE candidate is `FLAT_BASE_AMBIGUOUS`; only `WIDE_LOOSE` remains | start 2024-10-15 and pivot ~136.135 match source 136.13 |
-| CTSH / CUP_WITH_HANDLE | **BOUNDARY_DISAGREEMENT** | canonical CWH exists; split-normalized pivot is close to source basis | structural left-rim/start remains earlier than January-2004 source anchor |
-| FOUR / CUP_WITH_HANDLE | **LANDMARK_DISAGREEMENT** | February-2024 start is represented | source 84.26 pivot is not the persisted handle-high/pivot for that source-aligned span |
-| SEI / DOUBLE_BOTTOM | **MATCH** | source-aligned W remains `DOUBLE_BOTTOM_REJECTED` on duration | late-July start + 12.74 pivot agree; duration/undercut semantics unresolved |
-| AMZN / CUP_WITHOUT_HANDLE | **BOUNDARY_DISAGREEMENT** | CNH family is emitted | source 145.86 landmark exists, but canonical candidate scale still starts too early |
+| SNPS / FLAT_BASE | MATCH | source-aligned right-edge candidate exists; selected candidate still reports `FLAT_BASE_REJECTED` | source dimensions represented; candidate identity/ranking audit still required |
+| TW / FLAT_BASE | MATCH | `FLAT_BASE_AMBIGUOUS` | only research `WIDE_LOOSE` remains |
+| CTSH / CUP_WITH_HANDLE | BOUNDARY_DISAGREEMENT | `CUP_WITH_HANDLE_RECOGNIZED` | source January start/left-rim remains unresolved |
+| FOUR / CUP_WITH_HANDLE | MATCH | `CUP_WITH_HANDLE_AMBIGUOUS` | 84.26 pivot now exact through open-right-edge handle; deep-handle ambiguity retained |
+| SEI / DOUBLE_BOTTOM | MATCH | `DOUBLE_BOTTOM_REJECTED` | only unchanged `TOO_SHORT` hard gate remains |
+| NVDA / DOUBLE_BOTTOM | MATCH | `DOUBLE_BOTTOM_RECOGNIZED` | clean source-aligned recognized example |
+| SPOT / DOUBLE_BOTTOM | MATCH | `DOUBLE_BOTTOM_AMBIGUOUS` | exact 621.20 pivot; no-undercut is now explicit ambiguity |
+| AMZN / CUP_WITHOUT_HANDLE | MATCH | `CUP_WITHOUT_HANDLE_AMBIGUOUS` | source depth selects Sep 14 -> Oct 26 scale; roundedness proxies retained as ambiguity |
 
-## Flat Base v2 verdict
+## Active v2 contracts
 
-Two independent authoritative Flat examples, SNPS and TW, support a versioned semantics revision:
+- `flat-base-v2` — research `WIDE_LOOSE` no longer hard rejection;
+- `double-bottom-v2` — absence of second-trough undercut maps to ambiguity;
+- `cup-family-v2` — `SHARP_V` / `FRAGMENTED_BOTTOM` map to ambiguity; explicit right-edge CWH/CNH observations remain separate candidate semantics.
 
-- duration/depth hard-gate failure => `REJECTED`;
-- hard gates pass + research-only `WIDE_LOOSE` => `AMBIGUOUS`, fault retained;
-- hard gates pass + boundary context => `AMBIGUOUS`;
-- hard gates pass + tight research band => `RECOGNIZED`;
-- intermediate => `AMBIGUOUS`.
-
-Numeric thresholds are unchanged.
-
-OPEN_RIGHT_EDGE candidates are observations from a confirmed P1 start-high through the explicit as-of horizon. The horizon is never represented as a fabricated P1 turn. PIT/prefix regression is green.
+Numeric research bands are unchanged by those revisions.
 
 ## Morphology-only verdicts
 
 | Area | Current verdict |
 |---|---|
-| Missing-provider routing semantics | `KEEP` after revision |
-| Source-window end vs structural-end evaluator semantics | `KEEP` evaluator v0.2 |
-| Need explicit right-edge/open-base representation | `REVISE` — Flat DEVELOPMENT implementation active |
-| Flat `WIDE_LOOSE` hard-reject mapping | `REVISE` — Flat v2 maps it to `AMBIGUOUS` |
-| Flat numeric tightness bands | `UNRESOLVED` — unchanged pending broader corpus |
-| CWH start / left-rim semantics | `UNRESOLVED` — CTSH |
-| CWH handle-high / pivot role | `UNRESOLVED` — FOUR |
-| Double Bottom duration gate | `UNRESOLVED` — SEI |
-| Double Bottom strict second-trough undercut | `UNRESOLVED` — targeted DEVELOPMENT evidence required |
-| Cup-without-Handle candidate-span semantics | `UNRESOLVED` — AMZN |
-| BaseIdentity / Lineage freeze | `NOT READY` |
+| Missing-provider routing semantics | KEEP |
+| Source evaluator optional dimensions | KEEP |
+| Source depth dimension | KEEP for candidate-scale adjudication |
+| Right-edge representation | REVISE — implemented explicitly |
+| Flat `WIDE_LOOSE` severity | REVISE — ambiguity |
+| Flat numeric tightness bands | UNRESOLVED |
+| CWH pivot role / right-edge handle | REVISE — FOUR now source-aligned |
+| CWH start / left-rim semantics | UNRESOLVED — CTSH |
+| DB strict second-trough undercut | REVISE — ambiguity |
+| DB duration gate / boundary semantics | UNRESOLVED — SEI |
+| Cup roundedness proxy severity | REVISE — ambiguity |
+| Cup-no-Handle candidate scale | KEEP source-depth selection; identity churn audit pending |
+| BaseIdentity / Lineage freeze | NOT READY |
 
 ## Current work order
 
-1. audit CTSH/FOUR CWH structural start and handle/pivot semantics;
-2. audit SEI Double Bottom duration + undercut semantics and add targeted authoritative DB evidence;
-3. audit AMZN Cup-no-Handle structural-scale/right-edge representation;
-4. expand targeted Flat evidence before changing numeric tightness bands;
-5. audit BaseIdentity/Lineage churn after candidate semantics settle;
-6. freeze DEVELOPMENT detector/assembly semantics;
-7. open NFLX VALIDATION exactly once after freeze;
-8. record final P8 verdict and freeze #33 before #34 starts.
+1. CTSH source-start/left-rim audit;
+2. additional authoritative DB duration evidence before any duration revision;
+3. BaseIdentity / Lineage and candidate-ranking stability audit;
+4. targeted extra evidence only where remaining numeric bands are decision-relevant;
+5. freeze DEVELOPMENT semantics;
+6. open NFLX VALIDATION exactly once;
+7. record final P8 verdict and freeze #33 before #34 starts.
 
 ## Guardrails
 
 - DEVELOPMENT only during tuning;
-- NFLX VALIDATION remains locked and untouched;
-- no return, CAGR, PF, win-rate, FWD1, breakout-performance, or entry optimization;
-- no source precision or structural boundary may be invented from detector output;
-- authoritative source prices remain immutable;
-- corporate-action normalization remains explicit and versioned;
-- multiple plausible structural scales remain explicit;
+- NFLX VALIDATION remains locked;
+- no return, CAGR, PF, FWD1, breakout-performance or entry optimization;
+- no source dimension invented from detector output;
+- authoritative source values remain immutable;
+- corporate-action normalization stays explicit;
+- multiple plausible structural scales stay visible;
 - synthetic fixtures are regression-only;
-- low-coverage or contradictory bands remain `UNRESOLVED`;
-- #34 must not begin until P8/#33 has a defensible final verdict.
+- contradictory or low-coverage numeric bands remain `UNRESOLVED`.
