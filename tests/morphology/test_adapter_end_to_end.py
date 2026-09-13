@@ -27,7 +27,7 @@ def test_double_bottom_research_ambiguity_preserves_provenance():
     native = assess_double_bottom(_by_name(double_bottom_fixtures())["shallow_undercut"].geometry)
     envelope = normalize_double_bottom(native)
     assert envelope.status == NormalizedStatus.AMBIGUOUS
-    assert envelope.contract_version == "double-bottom-v1"
+    assert envelope.contract_version == "double-bottom-v2"
     assert envelope.faults[0].provenance == RuleProvenance.RESEARCH
 
 
@@ -35,7 +35,7 @@ def test_cup_research_ambiguity_preserves_provenance():
     native = assess_cup_body(_by_name(cup_body_fixtures())["sharp_v"].geometry)
     envelope = normalize_cup_body(native)
     assert envelope.status == NormalizedStatus.AMBIGUOUS
-    assert envelope.contract_version == "cup-family-v1"
+    assert envelope.contract_version == "cup-family-v2"
     assert any(f.code == "SHARP_V" and f.provenance == RuleProvenance.RESEARCH for f in envelope.faults)
 
 
