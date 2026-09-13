@@ -34,7 +34,7 @@ class LabelEvidence:
     symbol: str
     pattern: str
     label: LabelValue
-    window_start: date
+    window_start: date | None
     window_end: date | None
     asof_date: date
     provenance: LabelProvenance
@@ -43,7 +43,7 @@ class LabelEvidence:
     annotator: str | None = None
     rationale: str | None = None
     split: CorpusSplit = CorpusSplit.VALIDATION
-    window_start_precision: SourcePrecision = SourcePrecision.DAY
+    window_start_precision: SourcePrecision | None = SourcePrecision.DAY
     expected_pivot_source_date: date | None = None
     expected_pivot_level: float | None = None
     pivot_price_adjustment_factor: float = 1.0
@@ -56,9 +56,13 @@ class LabelEvidence:
             raise ValueError("symbol is required")
         if not self.pattern.strip():
             raise ValueError("pattern is required")
-        if self.window_end is not None and self.window_start > self.window_end:
+        if self.window_start is None and self.window_start_precision is not None:
+            raise ValueError("window_start_precision must be None when window_start is absent")
+        if self.window_start is not None and self.window_start_precision is None:
+            raise ValueError("window_start_precision is required when window_start is present")
+        if self.window_start is not None and self.window_end is not None and self.window_start > self.window_end:
             raise ValueError("window_start cannot be after window_end")
-        if self.asof_date < self.window_start:
+        if self.window_start is not None and self.asof_date < self.window_start:
             raise ValueError("asof_date cannot precede labelled window_start")
         if self.window_end is not None and self.asof_date < self.window_end:
             raise ValueError("asof_date cannot precede labelled window_end")
@@ -83,9 +87,7 @@ def validate_corpus(labels: list[LabelEvidence]) -> None:
     if len(ids) != len(set(ids)):
         raise ValueError("duplicate example_id in labelled corpus")
 
-    # Avoid hidden tuning leakage: one logical example cannot appear in both
-    # development and final validation under the same symbol/pattern/source anchor.
-    seen: dict[tuple[str, str, date, date | None], CorpusSplit] = {}
+    seen: dict[tuple[str, str, date | None, date | None], CorpusSplit] = {}
     for item in labels:
         key = (item.symbol, item.pattern, item.window_start, item.window_end)
         prior = seen.get(key)
