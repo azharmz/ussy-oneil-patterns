@@ -10,177 +10,176 @@ Last updated: 2026-09-13
 
 Cross-repo reconciliation decision: `docs/decisions/2026-09-13-p8-cross-repo-reconciliation.md`.
 
+## Recovery / continuation
+
+For continuation after lost chat context, read this board first, then the latest commits and newest `docs/decisions/2026-09-13-p8-*` records. NFLX VALIDATION remains locked until DEVELOPMENT semantics freeze.
+
 ## Project state
 
 | Phase | Status | Notes |
 |---|---|---|
-| P0 Bootstrap | COMPLETE | repo/package/test/docs skeleton + green CI baseline established |
+| P0 Bootstrap | COMPLETE | repo/package/test/docs skeleton + green CI baseline |
 | Parent #32 contract confirmation | COMPLETE | parent specification frozen and #33 authorized |
 | R2 OHLCV contract inspection | COMPLETE | official consumer pointer, schema, raw-vs-adjusted semantics documented |
 | PIT-safe data reader | COMPLETE | manifest/checksum/schema validation + explicit `asof_date` cutoff |
-| P1 Structural Landmark Engine | COMPLETE | frozen first-pass as `p1-landmark-v1` |
-| P2 Base Segmentation | **FIRST-PASS COMPLETE / P8 REVISION REQUIRED** | canonical batch shows named-base spans can be truncated or assembled at the wrong structural scale |
-| P3 Flat Base | FIRST-PASS COMPLETE | `flat-base-v1`; threshold verdict deferred until source-aligned windows exist |
-| P4 Double Bottom | FIRST-PASS COMPLETE | `double-bottom-v1`; strict undercut verdict remains unresolved |
-| P5 Cup family | **FIRST-PASS COMPLETE / P8 REVISION REQUIRED** | canonical CWH/CNH examples expose structural-instance / hierarchy mismatch |
+| P1 Structural Landmark Engine | COMPLETE | frozen first-pass as `p1-landmark-v1`; unchanged by current P8 revision |
+| P2 Base Segmentation | **FIRST-PASS COMPLETE / P8 RIGHT-EDGE DEBT** | confirmed-landmark segmentation cannot by itself represent all bases still forming at the as-of right edge |
+| P3 Flat Base | **P8 v2 DEVELOPMENT REVISION IN TEST** | duration/depth hard gates unchanged; research-only `WIDE_LOOSE` no longer hard-rejects when hard gates pass |
+| P4 Double Bottom | FIRST-PASS COMPLETE | source-aligned SEI case exists; duration/undercut semantics still unresolved |
+| P5 Cup family | **FIRST-PASS COMPLETE / P8 REVISION REQUIRED** | CTSH/FOUR/AMZN expose start, pivot-role, and candidate-span disagreements |
 | P6 Advanced patterns | COMPLETE | frozen first-pass as `advanced-patterns-v1` |
 | P7 Fault/ambiguity layer | COMPLETE | frozen first-pass as `fault-ambiguity-v1` |
-| P8 Labelled morphology validation | **DEVELOPMENT_DISAGREEMENT_ANALYSIS_IN_PROGRESS** | first canonical 5-example batch executed; 1 MATCH, 3 boundary disagreements, 1 pattern miss; structural candidate assembly revision required before threshold adjudication |
+| P8 Labelled morphology validation | **DEVELOPMENT_REVISION_IN_PROGRESS** | 6 DEVELOPMENT labels across 4 core families; right-edge Flat revision and Flat v2 state mapping under live rerun |
 | P9 Productionization | COMPLETE | frozen first-pass as `production-v1`; still carries P8 validation debt |
 
-## Frozen / first-pass contracts
+## Current contracts / revisions
 
 - P1 `p1-landmark-v1` — `docs/p1-landmark-contract-v1.md`
-- P2 `p2-segmentation-v1` — `docs/p2-segmentation-contract-v1.md` — first-pass contract, now carrying P8 revision debt
-- P3 `flat-base-v1` — `docs/p3-flat-base-contract-v1.md`
-- P4 `double-bottom-v1` — `docs/p4-double-bottom-contract-v1.md`
-- P5 `cup-family-v1` — `docs/p5-cup-family-contract-v1.md` — first-pass contract, now carrying P8 revision debt
-- P6 `advanced-patterns-v1` — `docs/p6-advanced-patterns-contract-v1.md`
-- P7 `fault-ambiguity-v1` — `docs/p7-fault-ambiguity-contract-v1.md`
-- P9 `production-v1` — `docs/p9-production-contract-v1.md`
+- P2 `p2-segmentation-v1` — confirmed-structure first pass; right-edge/open-base semantics not yet production-frozen
+- P3 first pass `flat-base-v1` — historical first-pass contract
+- P3 DEVELOPMENT revision `flat-base-v2` — `docs/p3-flat-base-contract-v2.md`
+- P4 `double-bottom-v1`
+- P5 `cup-family-v1` — first-pass contract carrying P8 revision debt
+- P6 `advanced-patterns-v1`
+- P7 `fault-ambiguity-v1`
+- P9 `production-v1`
 
-`FROZEN FIRST-PASS` never means immune from a versioned P8 revision. P8 exists specifically to test these contracts against independent real-world morphology evidence.
+`FROZEN FIRST-PASS` never means immune from a versioned P8 revision. P8 exists to test these contracts against independent real-world morphology evidence.
 
-## P8 labelled validation status
+## P8 infrastructure complete
 
-Detailed status: `docs/p8-labelled-validation-status.md`.
-
-Corpus acquisition plan: `docs/p8-corpus-acquisition-plan.md`.
-
-OHLCV routing policy: `docs/p8-ohlcv-source-policy.md`.
-
-Reference candidate registry: `data/p8/reference_candidates_v0.csv`.
-
-Executable label corpus: `data/p8/labels_v0.csv`.
-
-Canonical batch decision: `docs/decisions/2026-09-13-p8-canonical-development-batch-01.md`.
-
-### Completed P8 infrastructure
-
-- 8.1 label/evidence/provenance schema;
-- 8.2 corpus split/leakage contract;
-- 8.3 evaluation metrics + disagreement ids;
-- repository audit for independent labels;
-- acquisition protocol for 30–50 initial authoritative/human-labelled examples;
-- 31 reference-first authoritative candidates across Flat Base, Double Bottom, Cup-with-Handle, Cup-without-Handle, Ascending Base and Base-on-Base;
-- explicit R2-vs-external OHLCV routing policy;
-- deterministic R2 -> Yahoo/yfinance -> Tiingo routing;
-- runtime provider absence classified as `SourceUnavailable`, while supplied-but-invalid auth/API/schema/QC errors remain terminal;
-- source-anchor adjudication rules;
-- authoritative corpus with `DAY` / `MONTH` precision, optional dimensions, pivot fields and corporate-action comparison factor;
+- authoritative label/evidence/provenance schema;
+- DEVELOPMENT / VALIDATION leakage contract;
+- source precision semantics (`DAY`, `MONTH`);
+- optional source dimensions rather than invented boundaries;
+- explicit source pivot + corporate-action comparison factor;
+- strict OHLCV priority `R2 -> Yahoo/yfinance -> Tiingo`;
+- provider absence -> `SourceUnavailable`; supplied auth/API/schema/QC failure remains terminal;
 - canonical source-dimension evaluator `p8-source-dimension-eval-v0.2`;
-- canonical pattern pivot adapter `p8-pivot-adapter-v0.2`;
-- canonical prediction adapter `p8-canonical-prediction-adapter-v0.2`;
-- DEVELOPMENT live runner + artifact output;
-- diagnostic persistence of detector state/fault codes and all emitted predictions.
+- canonical pivot adapter `p8-pivot-adapter-v0.2`;
+- canonical live DEVELOPMENT runner + GitHub Actions artifact;
+- cup-body diagnostic ledger;
+- P1/P2 structural diagnostic ledger;
+- explicit prediction `candidate_semantics` separating confirmed structures from experimental right-edge observations.
 
-### Canonical authoritative corpus and first canonical execution
+## Authoritative corpus
 
-GitHub Actions run #175 (`34727720184`), head `551c2bc8a4b1a21bd83bf865a869a0b1a2fa194a`.
+Canonical file: `data/p8/labels_v0.csv`.
 
-All five DEVELOPMENT examples used Yahoo because R2 is not configured in this repository's Actions runtime. This is an explicit source fallback, not a morphology-driven provider choice.
+### DEVELOPMENT
 
-| Example | Split | Pattern | Canonical source agreement | Detector evidence | Current P8 interpretation |
-|---|---|---|---|---|---|
-| SNPS (`p8-label-0001`) | DEVELOPMENT | FLAT_BASE | **MATCH** | `FLAT_BASE_REJECTED`; `TOO_SHORT`, `WIDE_LOOSE` | start/pivot exact; structural window truncation makes threshold verdict unreliable |
-| CTSH (`p8-label-0003`) | DEVELOPMENT | CUP_WITH_HANDLE | **BOUNDARY_DISAGREEMENT** | `CUP_WITH_HANDLE_AMBIGUOUS`; `DEEP_HANDLE_EXCEPTIONAL` | emitted CWH is wrong earlier instance; handle-depth band unresolved |
-| FOUR (`p8-label-0004`) | DEVELOPMENT | CUP_WITH_HANDLE | **BOUNDARY_DISAGREEMENT** | `CUP_WITH_HANDLE_RECOGNIZED` | recognized CWH is wrong earlier instance; candidate assembly revision required |
-| SEI (`p8-label-0005`) | DEVELOPMENT | DOUBLE_BOTTOM | **BOUNDARY_DISAGREEMENT** | selected W rejected; `NO_SECOND_TROUGH_UNDERCUT` | W instance not source-aligned; undercut rule remains unresolved |
-| AMZN (`p8-label-0006`) | DEVELOPMENT | CUP_WITHOUT_HANDLE | **MISS_PATTERN** | no CNH; 145.86 preserved in other structural morphologies | cup-family assembly/hierarchy disagreement |
-| NFLX (`p8-label-0002`) | VALIDATION | CUP_WITH_HANDLE | **LOCKED / UNTOUCHED** | not executed | remains untouched until DEVELOPMENT semantics freeze |
+1. SNPS — `FLAT_BASE`
+2. CTSH — `CUP_WITH_HANDLE`
+3. FOUR — `CUP_WITH_HANDLE`
+4. SEI — `DOUBLE_BOTTOM`
+5. AMZN — `CUP_WITHOUT_HANDLE`
+6. TW — `FLAT_BASE`
 
-Batch summary:
+### VALIDATION
+
+- NFLX — `CUP_WITH_HANDLE` — **LOCKED / UNTOUCHED**
+
+The six DEVELOPMENT labels give initial coverage across all four implemented core pattern families. This is coverage, not a final validation verdict.
+
+## Data-source state
+
+R2 and Tiingo Actions secrets are configured in this repository.
+
+- SNPS resolves from R2.
+- CTSH, FOUR, SEI, AMZN and TW currently fall through to Yahoo because those tickers are absent from the current frozen R2 membership snapshot.
+- this fallback is explicit source unavailability, not morphology-driven provider selection.
+
+## Canonical DEVELOPMENT result before Flat v2 rerun
+
+With evaluator v0.2, multi-turn structural assembly, and the experimental open-right-edge Flat candidate class, the six-label batch reached:
 
 ```text
-MATCH                  = 1
-BOUNDARY_DISAGREEMENT  = 3
-MISS_PATTERN           = 1
+MATCH                  = 3
+BOUNDARY_DISAGREEMENT  = 2
+LANDMARK_DISAGREEMENT  = 1
+MISS_PATTERN           = 0
 ```
 
-Initial corpus coverage spans all four implemented core pattern families. This remains coverage, not a P8 validation verdict.
+| Example | Source-dimension result | Matched detector state | Interpretation |
+|---|---|---|---|
+| SNPS / Flat | **MATCH** | `FLAT_BASE_REJECTED` on confirmed candidate; source-aligned OPEN_RIGHT_EDGE candidate also present | source start/pivot exact; right-edge observation removes `TOO_SHORT`, leaving only research-only `WIDE_LOOSE` |
+| TW / Flat | **MATCH** | `FLAT_BASE_REJECTED` | new OPEN_RIGHT_EDGE candidate starts exactly 2024-10-15 and pivots ~136.135 vs source 136.13; only `WIDE_LOOSE` remains |
+| CTSH / CWH | **BOUNDARY_DISAGREEMENT** | `CUP_WITH_HANDLE_RECOGNIZED` | split-normalized pivot ~6.66 is good vs 6.685 source basis, but left-rim/start is materially earlier than January-2004 source anchor |
+| FOUR / CWH | **LANDMARK_DISAGREEMENT** | `CUP_WITH_HANDLE_RECOGNIZED` | February start represented, but handle/pivot landmark ~75.28 differs from source 84.26 |
+| SEI / Double Bottom | **MATCH** | `DOUBLE_BOTTOM_REJECTED` | late-July start + 12.74 pivot match; source-aligned W fails current `TOO_SHORT` duration gate |
+| AMZN / Cup-no-Handle | **BOUNDARY_DISAGREEMENT** | `CUP_WITHOUT_HANDLE_RECOGNIZED` | cup family recognized; source 145.86 landmark exists, but emitted candidate scale starts too early |
 
-### P8.5 morphology-only verdicts after canonical batch 01
+## Structural diagnosis
+
+P1/P2 diagnostic run established:
+
+- **TW:** P1 contains the source start high 2024-10-15 @ ~136.135, but no confirmed post-start SWING_LOW exists by 2024-11-19. Confirmed P2 therefore cannot emit the forming base.
+- **SNPS:** P1 contains 2023-04-04 high and 2023-04-25 low, but the low is only confirmed on 2023-05-18; confirmed P2 exposes a 15-session decline-stage span rather than the full source-described base.
+- **AMZN:** P1 contains 2023-09-14 high @ 145.86 and later turns, but confirmed assembly fragments the September-November source-described base into smaller structural spans.
+
+Conclusion: current debt is not merely a P2 bug. There is a representation gap between confirmed-turn structures and bases that are still open at the as-of right edge.
+
+Decision: `docs/decisions/2026-09-13-p8-open-right-edge-flat-preregistration.md`.
+
+## Flat Base v2 DEVELOPMENT revision
+
+Two independent authoritative Flat examples, SNPS and TW, become source-aligned when an explicitly marked, label-agnostic OPEN_RIGHT_EDGE observation is emitted from a confirmed P1 start-high through the as-of horizon.
+
+Both then pass the theory duration/depth gates and trip only `WIDE_LOOSE`.
+
+Because the wide/loose numerical band was explicitly research-only, not an official O'Neil hard rule, P8 now tests this versioned state revision:
+
+- duration/depth failure => `REJECTED`;
+- hard gates pass + `WIDE_LOOSE` => `AMBIGUOUS`, with fault retained;
+- hard gates pass + boundary context => `AMBIGUOUS`;
+- hard gates pass + tight band => `RECOGNIZED`;
+- intermediate => `AMBIGUOUS`.
+
+Numeric thresholds are unchanged.
+
+Decision: `docs/decisions/2026-09-13-p8-flat-wide-loose-semantics-v0.2.md`.
+
+Contract: `docs/p3-flat-base-contract-v2.md`.
+
+The live DEVELOPMENT rerun for this revision is now the active slice.
+
+## Current morphology verdicts
 
 | Area | Verdict |
 |---|---|
-| Missing-provider routing semantics | `REVISE` — completed |
-| Source-window end vs structural-end evaluator semantics | `REVISE` — completed in evaluator v0.2 |
-| Named-base structural candidate/window assembly | **`REVISE REQUIRED`** |
-| Flat Base tightness bands | `UNRESOLVED` until source-aligned window exists |
-| CWH handle-depth band | `UNRESOLVED` because CTSH CWH instance is misaligned |
-| Double Bottom strict second-trough undercut | `UNRESOLVED` because SEI W instance is misaligned |
-| Cup-no-Handle hierarchy | `UNRESOLVED / TARGETED DEVELOPMENT REQUIRED` |
-
-The central finding is structural: the current consecutive/atomic landmark assembly can identify plausible morphology, but repeatedly at a different structural scale than the authoritative named base. Threshold tuning before fixing candidate assembly would confound geometry with window selection and is prohibited.
-
-### Parent-branch migration evidence
-
-The superseded parallel CAN SLIM implementation had reported `5 MATCH / 5 AMBIGUOUS`. That result remains historical migration evidence only. The canonical oneil result above supersedes it for #33 decisions.
-
-### P8.4 / P8.5 / P8.6 status
-
-- P8.4 DEVELOPMENT execution: **COMPLETE for canonical batch 01**;
-- P8.5 morphology-only `KEEP` / `REVISE` / `UNRESOLVED`: **IN PROGRESS**; structural assembly is `REVISE REQUIRED`, threshold bands remain unresolved;
-- P8.6 final labelled-validation freeze: pending;
-- VALIDATION execution: **LOCKED** until revised DEVELOPMENT semantics are frozen.
-
-Synthetic fixtures remain regression tests and are intentionally ineligible as authoritative P8 evidence.
-
-## Frozen data-consumption decisions
-
-- upstream source of truth: `azharmz/ussy-data`;
-- consume `production/ready/current.json`, never hardcode run parquet UUID;
-- required fields: `date, security_id, ticker, open, high, low, close, adj_close, volume`;
-- upstream Yahoo ingestion uses `auto_adjust=False`;
-- raw OHLC and `adj_close` remain distinct;
-- structural morphology/pivots use raw OHLC under current spec;
-- historical evaluation receives only rows where `date <= asof_date`;
-- external P8 routing priority remains R2 -> Yahoo/yfinance -> Tiingo -> other documented provider;
-- fallback is allowed only on genuine source/provider unavailability, not to escape supplied auth/schema/QC failures or improve morphology agreement.
-
-## P9 — Productionization freeze
-
-Contract: `production-v1`
-
-First-pass verdict:
-
-`FIRST_PASS_ENGINE_COMPLETE_WITH_P8_VALIDATION_DEBT`
-
-### P9 checklist
-
-- 9.1 Versioned output record/schema — COMPLETE
-- 9.2 Validation-status + contract manifest in every run — COMPLETE
-- 9.3 Batch runner over PIT-safe R2 reader — COMPLETE
-- 9.4 Deterministic serialization / stable ids — COMPLETE
-- 9.5 End-to-end smoke tests + production orchestrator — COMPLETE
-- 9.6 Productionization contract + #33 first-pass verdict — COMPLETE
-
-Every production run/record must continue carrying the P8 validation-debt marker until P8 freezes.
+| Missing-provider routing semantics | `KEEP` after revision |
+| Source-window end vs structural-end evaluator semantics | `KEEP` evaluator v0.2 behavior |
+| Need explicit right-edge/open-base representation | **`REVISE` — Flat DEVELOPMENT experiment implemented** |
+| Flat `WIDE_LOOSE` hard-reject mapping | **`REVISE` — v2 maps research-only fault to AMBIGUOUS** |
+| Flat numeric tightness bands | `UNRESOLVED` — unchanged pending broader corpus |
+| CWH start / left-rim semantics | `UNRESOLVED` |
+| CWH handle-high / pivot role | `UNRESOLVED` |
+| Double Bottom duration gate | `UNRESOLVED` |
+| Double Bottom strict second-trough undercut | `UNRESOLVED` |
+| Cup-no-Handle candidate-span semantics | `UNRESOLVED` |
+| BaseIdentity / Lineage freeze | `NOT READY` |
 
 ## Hard constraints
 
 - no future bars or backdated confirmation;
 - no trading-return-based detector tuning;
 - no fabricated authoritative labels;
-- no source boundary/precision may be reverse-engineered from detector output;
-- no threshold revision while the compared structural instance is not source-aligned;
-- multiple plausible structural scales must remain explicit rather than silently forcing a winner;
-- no production output may imply research-only thresholds are P8-validated;
-- no CAN SLIM eligibility, entry optimization, portfolio, or sell logic in #33;
-- NFLX VALIDATION must remain untouched until DEVELOPMENT semantics freeze;
+- no source boundary/precision reverse-engineered from detector output;
+- OPEN_RIGHT_EDGE end is an observation horizon, never a fabricated P1 turn;
+- multiple plausible structural scales remain explicit rather than forcing one winner;
+- research-only thresholds must remain labelled as such;
+- NFLX VALIDATION remains untouched until DEVELOPMENT semantics freeze;
 - #34 must not start until P8/#33 has a defensible final verdict.
 
 ## Next work
 
-The active workstream is now **P8 structural candidate-assembly revision**:
-
-1. preregister a versioned multi-turn / structural-scale candidate assembly design that can span intervening minor P1 landmarks without using labels at runtime;
-2. preserve P1 initially and revise only the assembly of confirmed landmarks into named-base candidates;
-3. allow multiple plausible scales/instances to coexist explicitly and deterministically;
-4. implement the revision with PIT/prefix-stability tests and synthetic regression coverage;
-5. re-run all five DEVELOPMENT examples and classify whether source-aligned structural instances now exist;
-6. only then adjudicate Flat tightness, CWH handle-depth, DB undercut and Cup-family hierarchy bands;
-7. expand targeted DEVELOPMENT evidence where those bands remain unresolved;
-8. freeze DEVELOPMENT semantics only when disagreements are defensible;
+1. complete the live Flat v2 DEVELOPMENT rerun and verify SNPS/TW state change without harming other families;
+2. test OPEN_RIGHT_EDGE prefix/candidate-count behavior before any production promotion;
+3. expand targeted authoritative Flat evidence to determine whether the numeric tightness bands themselves need revision;
+4. continue CTSH/FOUR CWH landmark/start audit;
+5. add targeted Double Bottom evidence for duration + second-trough-undercut semantics;
+6. continue AMZN/CNH structural-scale diagnosis;
+7. audit BaseIdentity/Lineage churn after candidate semantics settle;
+8. freeze DEVELOPMENT detector/assembly semantics;
 9. open NFLX VALIDATION exactly once after freeze;
-10. freeze P8/#33, update parent #33 pointer, then allow #34 to begin.
+10. freeze P8/#33, update the parent #33 pointer, then allow #34 to begin.
