@@ -42,22 +42,22 @@ def test_clear_rounded_u_is_stable_under_small_close_perturbations():
         assert result.state == CupBodyState.RECOGNIZED
 
 
-def test_clear_sharp_v_remains_rejected_under_small_close_perturbations():
+def test_clear_sharp_v_remains_ambiguous_under_small_close_perturbations():
     fixture = _by_name()["sharp_v"]
     for multiplier in (0.999, 1.001):
         frame = fixture.frame.copy()
         frame["close"] = frame["close"] * multiplier
         result = assess_cup_body(_rebuild(fixture, frame))
-        assert result.state == CupBodyState.REJECTED
+        assert result.state == CupBodyState.AMBIGUOUS
 
 
-def test_fixture_labels_match_first_pass_detector_states():
+def test_fixture_labels_map_to_p8_v2_detector_states():
     expected = {
         "rounded_u": CupBodyState.RECOGNIZED,
-        "sharp_v": CupBodyState.REJECTED,
-        "double_bottom_w": CupBodyState.REJECTED,
+        "sharp_v": CupBodyState.AMBIGUOUS,
+        "double_bottom_w": CupBodyState.AMBIGUOUS,
         "flat_shallow": CupBodyState.REJECTED,
-        "wide_loose": CupBodyState.REJECTED,
+        "wide_loose": CupBodyState.AMBIGUOUS,
     }
     for fixture in cup_body_fixtures():
         assert assess_cup_body(fixture.geometry).state == expected[fixture.name]
