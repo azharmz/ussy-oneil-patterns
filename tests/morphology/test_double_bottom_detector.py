@@ -23,9 +23,11 @@ def test_too_deep_is_rejected_by_theory_gate():
     assert DoubleBottomFault.TOO_DEEP in result.faults
 
 
-def test_no_second_undercut_is_rejected_by_theory_gate():
+def test_no_second_undercut_is_explicit_ambiguity_in_v2():
     result = assess_double_bottom(_by_name()["no_second_undercut"].geometry)
-    assert result.state == DoubleBottomState.REJECTED
+    assert result.state == DoubleBottomState.AMBIGUOUS
+    assert result.theory_gates_pass is True
+    assert result.research_bands_pass is False
     assert DoubleBottomFault.NO_SECOND_TROUGH_UNDERCUT in result.faults
 
 
