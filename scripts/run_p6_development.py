@@ -120,6 +120,10 @@ def main() -> int:
         raise ValueError("P6 corpus contains a non-advanced DEVELOPMENT pattern")
 
     results = [_run_one(label) for label in labels]
+    identity_counts = Counter()
+    for item in results:
+        identity_counts.update(item["candidate_identity_state_counts"])
+
     report = {
         "stage": "P6",
         "scope": "AUTHORITATIVE_DEVELOPMENT",
@@ -146,6 +150,8 @@ def main() -> int:
                 ).items()
             )
         ),
+        "candidate_identity_state_counts": dict(sorted(identity_counts.items())),
+        "candidate_identity_status_conflict_count": identity_counts.get("STATUS_CONFLICT", 0),
         "results": results,
         "guardrails": [
             "Only DEVELOPMENT rows are scored; VALIDATION identities are listed but their source dimensions are never opened by this runner.",
