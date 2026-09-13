@@ -31,10 +31,10 @@ def test_double_bottom_research_ambiguity_preserves_provenance():
     assert envelope.faults[0].provenance == RuleProvenance.RESEARCH
 
 
-def test_cup_research_rejection_preserves_provenance():
+def test_cup_research_ambiguity_preserves_provenance():
     native = assess_cup_body(_by_name(cup_body_fixtures())["sharp_v"].geometry)
     envelope = normalize_cup_body(native)
-    assert envelope.status == NormalizedStatus.REJECTED
+    assert envelope.status == NormalizedStatus.AMBIGUOUS
     assert envelope.contract_version == "cup-family-v1"
     assert any(f.code == "SHARP_V" and f.provenance == RuleProvenance.RESEARCH for f in envelope.faults)
 
