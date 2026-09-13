@@ -1,97 +1,104 @@
-# P6 Advanced Patterns — Final Authoritative Validation Verdict
+# P6 Advanced Patterns — Final Verdict
 
 Date: 2026-09-13
 
-Verdict: **VALIDATION FAIL / FROZEN — NOT PRODUCTION-VALIDATED**
+Verdict: **DEFERRED / NOT PRODUCTION-VALIDATED / FROZEN UNTIL NEW AUTHORITATIVE MORPHOLOGY EVIDENCE EXISTS**
 
 Scope: `ASCENDING_BASE` and `BASE_ON_BASE` only. Frozen P3/P4/P5/P8 core morphology is unchanged.
 
-## Validation standard
+## Cycle 1 — completed failed validation
 
-P6 was re-opened only as a separately versioned validation cycle and was held to the same basic evidence discipline as the four core families:
+Cycle 1 used 10 authoritative DEVELOPMENT positives and locked STT (`ASCENDING_BASE`) plus C (`BASE_ON_BASE`) as untouched VALIDATION.
 
-1. authoritative positive DEVELOPMENT corpus;
-2. untouched authoritative VALIDATION corpus locked before tuning;
-3. PIT-safe morphology extraction and source-dimension scoring;
-4. DEVELOPMENT freeze before VALIDATION open;
-5. one-shot frozen VALIDATION execution;
-6. no tuning from VALIDATION or trading outcomes.
+DEVELOPMENT achieved 10/10 source-dimension MATCH and zero candidate identity `STATUS_CONFLICT`, but detector-state evidence was weak: Ascending Base 1 recognized / 1 ambiguous / 3 rejected; Base-on-Base 1 recognized / 4 ambiguous.
 
-## Frozen DEVELOPMENT
+After freeze, STT/C were opened exactly once. Both source dimensions MATCH, but STT was `ASCENDING_BASE_REJECTED` and C was `BASE_ON_BASE_AMBIGUOUS`. Cycle 1 therefore ended **VALIDATION FAIL / NOT PRODUCTION-VALIDATED**. STT/C are consumed evidence and may never again be treated as untouched validation.
 
-Freeze record: `docs/decisions/p6-development-freeze-v1.md`.
+Cycle 1 evidence remains in `docs/decisions/p6-development-freeze-v1.md`; one-shot run `34750413835`, artifact `10315775412`, digest `sha256:618c72a7accbb9b5434db9040e2bad645bf0435de21b32ffac019bfe4d83ca16`.
 
-- evidence commit: `ba13844145095a4bb40f75d9ce477fd61d3aad50`
-- workflow run: `34748254127`
-- artifact id: `10315076061`
-- artifact digest: `sha256:332f7fc9aab753280b386491cb59d3a48ad4f258374c7e40b804309eb93425e8`
-- regression: **235 tests passed**
-- P8 DEVELOPMENT: **skipped**
-- corpus: 5 authoritative `ASCENDING_BASE` + 5 authoritative `BASE_ON_BASE` positives
-- source-dimension agreement: **10/10 MATCH**
-- candidate identity `STATUS_CONFLICT`: **0**
+## Cycle 2 — fresh authoritative evidence search
 
-However, detector-state evidence was materially weaker than source-dimension agreement:
+Cycle 2 was opened because the user required P6 to continue until it either reached a defensible validation verdict or genuinely hit the boundary of available authoritative evidence.
 
-- Ascending Base: 1 recognized, 1 ambiguous, 3 rejected;
-- Base-on-Base: 1 recognized, 4 ambiguous.
+Fresh locked corpus: `data/p6/labels_cycle2_v0.csv`.
 
-The DEVELOPMENT cycle therefore froze explicit detector-state debt rather than hiding it behind source pivot agreement.
+DEVELOPMENT:
 
-## Untouched one-shot VALIDATION
+- Ascending Base: AVGO, TME, CCJ, SNOW, NAVN;
+- Base-on-Base: META, TRV, SE, JLL, SEI.
 
-The locked rows were `p6-label-0011` (State Street, `ASCENDING_BASE`) and `p6-label-0012` (Citigroup, `BASE_ON_BASE`). They were opened exactly once after DEVELOPMENT freeze.
+Reserved untouched VALIDATION before DEVELOPMENT scoring:
 
-Execution commit: `2c10165e67c1486459ddf191021243ad70e90f7b`.
-Workflow: `p6-validation-once`, run `34750413835`.
-Artifact: `p6-frozen-validation`, id `10315775412`.
-Artifact digest: `sha256:618c72a7accbb9b5434db9040e2bad645bf0435de21b32ffac019bfe4d83ca16`.
+- MRX — `ASCENDING_BASE`;
+- CAT — `BASE_ON_BASE`.
 
-Frozen one-shot result:
+Cycle 2 source audit: `docs/p6-cycle2-source-audit.md`.
+Terminal record: `docs/decisions/p6-cycle2-terminal-verdict.md`.
+
+### Final Cycle 2 DEVELOPMENT evidence
+
+Execution commit: `9cab74ace28a55f7715b7bf1bdecddf2cee758e4`.
+Workflow run: `34753213531`.
+Artifact id: `10316012884`.
+Artifact digest: `sha256:303276ed83abae1f74b83f690d102fdf4c5a6a9c7e2bb1aada8e31d50a93db26`.
 
 ```text
-result_count                    = 2
-source-dimension MATCH          = 2
-candidate identity conflicts    = 0
+all DEVELOPMENT                     9 MATCH / 1 MISS_PATTERN
+candidate identity STATUS_CONFLICT  0
 
-STT ASCENDING_BASE:
-  candidate resolution          = UNIQUE
-  matched detector state        = ASCENDING_BASE_REJECTED
+ASCENDING_BASE                      5/5 MATCH
+candidate resolution                5/5 SOURCE_EQUIVALENT_MULTIPLE
+presentation detector state         4 RECOGNIZED / 1 REJECTED
 
-C BASE_ON_BASE:
-  candidate resolution          = SOURCE_EQUIVALENT_MULTIPLE
-  matched detector state        = BASE_ON_BASE_AMBIGUOUS
+BASE_ON_BASE                        4/5 MATCH / 1 MISS_PATTERN
+candidate resolution                4 SOURCE_EQUIVALENT_MULTIPLE / 1 NONE
+presentation detector state         4 AMBIGUOUS / 1 NO_MATCH
 ```
 
-The one-shot workflow path was removed immediately after execution in commit `da251cee5f8ffbc3038a198950d3b824f4b4d458` so VALIDATION cannot become iterative tuning evidence.
+AVGO's source pivot is pre-split 1151.82; the explicit 10-for-1 adjustment yields an exact source-dimension match against adjusted OHLCV. Yet five algorithmic candidates remain source-equivalent because the authoritative source does not publish a detector-comparable start/pullback landmark set. Their detector states disagree.
 
-## Interpretation
+META is a genuine `MISS_PATTERN`: IBD/MarketSurge explicitly identifies the 602.95 flat base as part of a base-on-base formation, but composition of the frozen core candidates emits no Base-on-Base candidate at that as-of date.
 
-The two authoritative VALIDATION rows agree with the frozen adapter on the published pattern identity/pivot dimensions, but neither positive untouched example is recognized by the frozen detector state. Under a morphology-validation standard, `MATCH` on sparse source dimensions is not sufficient to override a `REJECTED` or `AMBIGUOUS` morphology state.
+## Why Cycle 2 stops before VALIDATION
 
-Therefore P6 does **not** earn the core patterns' validation status. The defensible verdict for this cycle is **VALIDATION FAIL**, not CONDITIONAL PASS.
+The four core families were not validated by choosing whichever internal candidate happened to look best. P6 must meet the same discipline.
 
-This is not evidence that the published patterns are invalid. It is evidence that the current quantitative P6 representation is not sufficiently validated to claim reliable recognition of authoritative examples.
+Cycle 2 found many additional authoritative named examples and exact pivots, so example count is no longer the blocker. The blocker is **authoritative morphology resolution**.
 
-## Why no post-validation fix is allowed
+For `ASCENDING_BASE`, IBD/MarketSurge clearly specifies three moderate pullbacks with successively higher highs/lows, generally 9–16 weeks, and the pattern high as buy point. But the published examples usually omit exact pullback dates/prices and detector-comparable boundaries. Every fresh DEVELOPMENT example therefore has multiple source-equivalent internal candidates. Choosing among them from detector state would be circular.
 
-The observed failures cannot be repaired inside this cycle without contaminating the untouched test:
+For `BASE_ON_BASE`, IBD/O'Neil clearly specifies a breakout from the first base, less than the normal roughly 20%–25% advance before the next consolidation, and a later base that forms on top of the first and usually finds support around the prior base top. Current wording allows `entirely or mostly above`. The authoritative material does not supply a universal numerical boundary for `mostly above` or a numerical support tolerance. Inventing an overlap percentage from DEVELOPMENT would be research tuning rather than source-grounded quantification. Fixing META by loosening P3/P4/P5/P8 constituent morphology would violate the frozen-core boundary.
 
-- `ASCENDING_BASE`: the validation example is uniquely resolved but rejected. Weakening higher-low or related morphology after seeing STT would be direct validation-set tuning.
-- `BASE_ON_BASE`: authoritative guidance permits the second base to sit “entirely or mostly above” the first, but the available source material does not provide a universal numerical definition of “mostly.” Converting the C result from ambiguous to recognized by inventing an overlap percentage would create unsupported precision.
+Therefore the DEVELOPMENT contract cannot be defensibly frozen for a one-shot Cycle 2 test.
 
-A new P6 cycle is allowed only with new authoritative DEVELOPMENT evidence and a new untouched VALIDATION set. The failed one-shot rows must never be recycled as untouched validation.
+### MRX and CAT remain untouched
 
-## Frozen consequences
+MRX and CAT were **not opened**. Consuming them now would not answer the unresolved specification problem and would waste the untouched test set. They remain reserved evidence, not validation results and not tuning targets.
 
-- `ASCENDING_BASE` and `BASE_ON_BASE` remain outside `oneil-pattern-output-v2`.
-- No downstream consumer may describe P6 as P8-equivalent or production-validated.
+## Production consequence
+
+- `ASCENDING_BASE` remains outside `oneil-pattern-output-v2`.
+- `BASE_ON_BASE` remains outside `oneil-pattern-output-v2`.
 - P3/P4/P5/P8 core remains frozen and unchanged.
-- No return, CAGR, PF, FWD1, breakout success, entry optimization, or portfolio outcome may be used to rescue this verdict.
-- Existing P6 v2/v3 implementation and artifacts remain historical evidence; this verdict supersedes the earlier `CONDITIONAL PASS / FROZEN WITH VALIDATION DEBT` status.
+- No downstream consumer may describe P6 as P8-equivalent or production-validated.
+- Trading returns, CAGR, PF, FWD1, breakout success, entry optimization and portfolio outcomes remain prohibited rescue evidence.
 
-## What would justify another cycle
+## Reopen condition
 
-A new cycle requires authoritative chart evidence that adds morphology information, not merely another ticker name or buy point. In particular, useful evidence would independently identify the Ascending Base pullback sequence/boundaries and provide enough Base-on-Base geometry to operationalize the qualitative “mostly above” region without fitting it to validation outcomes.
+Do not open Cycle 3 merely because another IBD article names an Ascending Base or Base-on-Base or publishes another buy point.
 
-Until such evidence exists, P6 is **FROZEN — VALIDATION FAIL / NOT PRODUCTION-VALIDATED**.
+P6 should be reopened only if new authoritative evidence supplies a missing operational dimension, such as:
+
+1. exact labelled Ascending Base pullback landmarks or an unambiguous detector-comparable start/end boundary;
+2. an authoritative quantitative definition of Base-on-Base `mostly above` / support-at-prior-base-top geometry; or
+3. an authoritative labelled MarketSurge dataset that independently resolves candidate identity.
+
+Until then, additional detector tuning would create unsupported precision rather than improve validation.
+
+## Final interpretation
+
+Cycle 1 proved the then-frozen P6 representation failed untouched morphology validation. Cycle 2 then performed the requested deeper search with a fresh authoritative corpus and demonstrated that the remaining obstacle is not effort or named-example count: it is missing authoritative landmark/overlap semantics required for machine validation at the same standard as the four core patterns.
+
+Accordingly P6 is now terminally frozen as:
+
+**DEFERRED / NOT PRODUCTION-VALIDATED / REOPEN ONLY ON NEW AUTHORITATIVE MORPHOLOGY EVIDENCE.**
