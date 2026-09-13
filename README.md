@@ -4,40 +4,79 @@ Canonical implementation repository for CAN SLIM workstream **#33 — O'Neil Pat
 
 > ## START HERE — continuation / context recovery
 >
-> If a prior ChatGPT/work session is unavailable, do **not** reconstruct state from memory or from the CAN SLIM parent branch.
+> If a prior ChatGPT/work session is unavailable, do **not** reconstruct state from memory or from the CAN SLIM parent repo.
 >
-> 1. confirm the active branch in this repository;
-> 2. read `docs/progress-board.md`;
-> 3. read `docs/decisions/p8-development-freeze-v1.md`;
-> 4. read `docs/decisions/p8-final-verdict.md`;
-> 5. read `docs/decisions/p6-development-freeze-v1.md` and `docs/decisions/p6-final-verdict.md` before changing advanced-pattern semantics;
-> 6. read `docs/production-output-contract-v2.md` before building a downstream consumer;
-> 7. inspect the latest commits only after the frozen records above are understood.
+> 1. read `docs/progress-board.md`;
+> 2. read `docs/decisions/p8-development-freeze-v1.md` and `docs/decisions/p8-final-verdict.md` for the frozen four-core-family track;
+> 3. read `docs/decisions/p6-final-verdict.md` and `docs/decisions/p6-cycle2-terminal-verdict.md` before touching advanced patterns;
+> 4. read `docs/production-output-contract-v2.md` before building a downstream consumer;
+> 5. inspect latest commits only after those frozen records are understood.
 >
-> For #33/P8, this repository is the source of truth. The parent `azharmz/ussy-canslim-research` is roadmap/HQ and must not host a parallel pattern engine.
->
-> Current state: core #33 is frozen with a **CONDITIONAL PASS** and production schema v2 is aligned to the exact frozen P8 adapter. P6 advanced patterns completed an authoritative DEVELOPMENT freeze plus untouched one-shot VALIDATION and finished **VALIDATION FAIL / FROZEN — NOT PRODUCTION-VALIDATED**. Do not tune from the opened P6 validation rows, NFLX, or trading outcomes.
+> This repository is the source of truth for #33. `azharmz/ussy-canslim-research` is the parent/HQ consumer and must not host a parallel pattern engine.
 
-## Parent contract
+## Current authoritative state
 
-Parent repository: `azharmz/ussy-canslim-research`
+### Four production core families
 
-Frozen upstream specification: `docs/methodology/theory-faithful-candidate-spec-v1.md` in the parent repository.
+Frozen production scope:
 
-This repository owns only:
+- `FLAT_BASE`
+- `DOUBLE_BOTTOM`
+- `CUP_WITHOUT_HANDLE`
+- `CUP_WITH_HANDLE`
 
-- candidate-base segmentation;
-- PIT-safe swing / landmark extraction;
-- morphology features;
-- O'Neil base classification;
+P8 verdict: **CONDITIONAL PASS / FROZEN WITH VALIDATION DEBT**.
+
+Frozen DEVELOPMENT evidence is 20 authoritative positives, five per core family, with 20/20 source-dimension `MATCH` and zero true candidate identity `STATUS_CONFLICT`. NFLX `CUP_WITH_HANDLE` was then opened once as untouched VALIDATION and structurally matched uniquely at the authoritative start, while retaining frozen `CUP_WITH_HANDLE_AMBIGUOUS / BELOW_CUP_MIDPOINT` debt. No post-validation tuning is allowed.
+
+Production schema remains **`oneil-pattern-output-v2`**, engine **`33-core-p8-frozen-v1`**. Production directly consumes the frozen P8 canonical prediction adapter and preserves candidate/base/lineage identity, explicit detector state, candidate semantics, structural signature, pivot/depth when available, faults, and contract versions.
+
+### P6 advanced families
+
+Advanced scope:
+
+- `ASCENDING_BASE`
+- `BASE_ON_BASE`
+
+Terminal verdict:
+
+**DEFERRED / NOT PRODUCTION-VALIDATED / FROZEN UNTIL NEW AUTHORITATIVE MORPHOLOGY EVIDENCE EXISTS**.
+
+P6 is **not** production-equivalent to the four core families and is **not** emitted by `oneil-pattern-output-v2`.
+
+Cycle 1 completed a full DEVELOPMENT → freeze → untouched one-shot VALIDATION discipline. STT (`ASCENDING_BASE`) and C (`BASE_ON_BASE`) were consumed exactly once; both matched sparse source dimensions, but STT was rejected and C ambiguous. Cycle 1 therefore failed morphology validation. STT/C must never be recycled as untouched validation.
+
+Cycle 2 used fresh authoritative DEVELOPMENT evidence:
+
+- Ascending Base: AVGO, TME, CCJ, SNOW, NAVN;
+- Base-on-Base: META, TRV, SE, JLL, SEI.
+
+It reserved MRX (`ASCENDING_BASE`) and CAT (`BASE_ON_BASE`) as untouched VALIDATION **before** DEVELOPMENT scoring. Cycle 2 DEVELOPMENT ended at 9/10 source-dimension `MATCH`, zero identity `STATUS_CONFLICT`, but exposed a more fundamental evidence boundary:
+
+- all five Ascending Base examples have multiple source-equivalent internal candidates because authoritative sources do not provide exact pullback landmarks/boundaries;
+- Base-on-Base authoritative guidance says the second base is `entirely or mostly above` the first but does not provide a universal quantitative definition of `mostly above`;
+- META is a genuine `MISS_PATTERN`, and repairing it by loosening frozen P3/P4/P5/P8 constituent morphology would violate the frozen-core boundary.
+
+Therefore Cycle 2 was **not frozen for one-shot validation**. MRX and CAT remain untouched and must not be used for DEVELOPMENT/tuning while that status is preserved.
+
+Do **not** open Cycle 3 merely because more articles provide pattern names, pivots, or approximate starts. P6 may be reopened only when genuinely new authoritative morphology evidence resolves a missing operational dimension, such as exact Ascending Base pullback landmarks/boundaries, an authoritative quantitative Base-on-Base `mostly above` rule, or an authoritative labelled dataset that independently resolves candidate identity.
+
+## Parent contract and ownership
+
+Parent repository: `azharmz/ussy-canslim-research`.
+
+This repository owns:
+
+- PIT-safe landmarks and base segmentation;
+- morphology features and O'Neil pattern classification;
 - fault / ambiguity evidence;
 - pattern-specific structural pivots;
-- morphology / landmark validation;
+- morphology validation;
 - canonical #33 production output contracts.
 
-This repository does **not** own breakout execution, CAN SLIM C/A/I/M integration, portfolio construction, sell rules, CAGR/PF optimization, FWD1, or EXH2.
+This repository does **not** own breakout execution, CAN SLIM C/A/I/M integration, portfolio construction, sell rules, CAGR/PF optimization, FWD1, EXH2, or #34 candidate generation.
 
-## Governing development order
+The governing order remains:
 
 ```text
 THEORY
@@ -48,125 +87,35 @@ THEORY
   -> PERFORMANCE RESEARCH
 ```
 
-#33 occupies pattern quantification and morphology validation. Downstream candidate generation belongs to #34.
+#33 stops at morphology/production-contract governance. #34 belongs to the CAN SLIM parent workstream.
 
-## Current phase
+## Governance prohibitions
 
-**#33 core morphology and production output are frozen after P8 independent validation. P6 advanced morphology has completed a separate authoritative validation cycle and failed the morphology-recognition bar.**
+Do not:
 
-P8 final verdict: **CONDITIONAL PASS / FROZEN WITH VALIDATION DEBT**.
+- tune frozen P3/P4/P5/P8 from NFLX, P6, returns, CAGR, PF, FWD1, breakout success, or entry optimization;
+- tune P6 from consumed STT/C validation evidence;
+- use MRX/CAT as DEVELOPMENT while they remain untouched;
+- choose an Ascending Base candidate because its detector state best fits an authoritative label;
+- invent a numeric Base-on-Base `mostly above` threshold;
+- use P6 as a backdoor to loosen frozen core morphology;
+- emit `ASCENDING_BASE` or `BASE_ON_BASE` through `oneil-pattern-output-v2`;
+- describe P6 as P8-equivalent or production-validated.
 
-Frozen DEVELOPMENT evidence:
+## Canonical records
 
-- 20 authoritative positive examples;
-- five examples each for `FLAT_BASE`, `CUP_WITH_HANDLE`, `CUP_WITHOUT_HANDLE`, and `DOUBLE_BOTTOM`;
-- 20/20 source-dimension `MATCH`;
-- zero true candidate identity `STATUS_CONFLICT`.
-
-Independent VALIDATION:
-
-- NFLX `CUP_WITH_HANDLE` was opened once only after DEVELOPMENT freeze;
-- source agreement: `MATCH`;
-- candidate resolution: `UNIQUE`;
-- exact source/matched start: `2023-02-03`;
-- frozen detector state: `CUP_WITH_HANDLE_AMBIGUOUS` with `BELOW_CUP_MIDPOINT` retained as validation debt.
-
-The NFLX row had pivot/depth intentionally unscored before opening VALIDATION, so P8 does **not** claim every numeric CWH band has independent validation.
-
-## P6 advanced-pattern verdict
-
-P6 final verdict: **VALIDATION FAIL / FROZEN — NOT PRODUCTION-VALIDATED**.
-
-P6 was held to a separate authoritative DEVELOPMENT + untouched VALIDATION cycle without reopening frozen core morphology.
-
-Frozen DEVELOPMENT:
-
-- 5 authoritative `ASCENDING_BASE` positives;
-- 5 authoritative `BASE_ON_BASE` positives;
-- 10/10 source-dimension `MATCH`;
-- zero candidate identity `STATUS_CONFLICT`;
-- detector states nevertheless included 3 rejected Ascending Base examples and 4 ambiguous Base-on-Base examples.
-
-Untouched one-shot VALIDATION:
-
-- STT `ASCENDING_BASE`: source-dimension `MATCH`, candidate `UNIQUE`, detector state `ASCENDING_BASE_REJECTED`;
-- C `BASE_ON_BASE`: source-dimension `MATCH`, source-equivalent multiple candidates, matched detector state `BASE_ON_BASE_AMBIGUOUS`;
-- validation workflow run `34750413835`, artifact id `10315775412`;
-- one-shot workflow path was removed after execution.
-
-Because neither untouched authoritative positive is `RECOGNIZED`, sparse source-dimension agreement is not treated as a morphology pass. The earlier P6 conditional-pass verdict is superseded by the authoritative validation result.
-
-P6 remains outside production schema v2. A future cycle requires new authoritative morphology evidence and a new untouched validation set; STT/C may not be recycled as untouched validation.
-
-See:
-
-- `docs/p6-source-audit-v2.md`
-- `docs/p6-advanced-patterns-contract-v2.md`
-- `docs/decisions/p6-development-freeze-v1.md`
-- `docs/decisions/p6-final-verdict.md`
-
-## Frozen production contract
-
-Production schema: `oneil-pattern-output-v2`.
-Engine: `33-core-p8-frozen-v1`.
-Validation status: `P8_CONDITIONAL_PASS_FROZEN`.
-
-Production directly consumes the canonical frozen P8 predictions instead of rebuilding a separate detector path. Records preserve:
-
-- canonical `candidate_id`;
-- stable `base_id` (`core-base-id-v1`);
-- conservative exact-anchor `lineage_id` (`core-lineage-v1`);
-- `RECOGNIZED` / `AMBIGUOUS` / `REJECTED`;
-- candidate semantics;
-- structural signature;
-- pivot/depth when available;
-- detector faults and contract versions.
-
-The frozen v2 stream contains only the four core P8-validated families. Advanced families do not inherit this evidence level.
-
-See:
+Core:
 
 - `docs/progress-board.md`
-- `docs/p8-labelled-validation-status.md`
 - `docs/decisions/p8-development-freeze-v1.md`
 - `docs/decisions/p8-final-verdict.md`
 - `docs/production-output-contract-v2.md`
 
-## Core pattern scope with P8 evidence
+P6:
 
-Validated core families:
+- `data/p6/labels_cycle2_v0.csv`
+- `docs/p6-cycle2-source-audit.md`
+- `docs/decisions/p6-cycle2-terminal-verdict.md`
+- `docs/decisions/p6-final-verdict.md`
 
-- `FLAT_BASE`
-- `DOUBLE_BOTTOM`
-- `CUP_WITHOUT_HANDLE`
-- `CUP_WITH_HANDLE`
-
-Separately frozen P6 advanced families:
-
-- `ASCENDING_BASE`
-- `BASE_ON_BASE`
-
-They failed their separate authoritative validation cycle and are not emitted by frozen production v2.
-
-Downstream consumers must preserve explicit states such as:
-
-- `RECOGNIZED`
-- `AMBIGUOUS`
-- `REJECTED`
-
-and must also preserve candidate semantics and detector faults.
-
-## PIT rule
-
-For an evaluation as of date `T`, no feature or landmark may use information after `T`.
-
-If an extremum is economically located at one date but only confirmed later, preserve both concepts:
-
-- `price_date`
-- `confirmed_date`
-
-## Research rule
-
-The frozen P8 detector/evaluator semantics must not be revised from NFLX VALIDATION or from later trading performance. The frozen P6 cycle must likewise not be revised from STT/C VALIDATION, trading outcomes, or used as a route to reopen P3/P4/P5/P8.
-
-Any future P6 research requires a new explicitly versioned cycle, new authoritative morphology evidence, and a new untouched validation set. Frozen verdicts remain historical evidence and must not be rewritten by post-hoc tuning.
+Cycle 1 records/artifacts remain historical evidence and must not be deleted or rewritten.
