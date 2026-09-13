@@ -45,7 +45,8 @@ def parse_args() -> argparse.Namespace:
 
 
 def _run_one(label, args) -> dict:
-    context_start = label.window_start - timedelta(days=args.context_calendar_days)
+    anchor = label.window_start or label.asof_date
+    context_start = anchor - timedelta(days=args.context_calendar_days)
     routed = route_development_ohlcv(label.symbol, context_start, label.asof_date)
     predictions = extract_core_morphology_predictions(routed.frame, asof_date=label.asof_date)
     cup_body_diagnostics = extract_cup_body_diagnostics(routed.frame, asof_date=label.asof_date)
@@ -137,6 +138,7 @@ def main() -> int:
             "OHLCV routing is strict R2 -> Yahoo -> Tiingo; only SourceUnavailable permits fallback.",
             "All input bars are truncated at each label asof_date.",
             "Source dimensions are scored only at their published precision and comparable semantic role.",
+            "When source start is absent, context lookback is fixed from asof_date and start is not scored.",
             "Corporate-action factors alter comparison basis only; source prices stay immutable.",
             "Detector status/faults and diagnostic ledgers are evidence separate from source-dimension agreement.",
             "P1/P2 structural diagnostics use canonical label-agnostic landmark/segment construction only.",
