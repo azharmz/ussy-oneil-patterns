@@ -50,12 +50,16 @@ from .structural_assembly import (
     assemble_multiturn_segments,
 )
 
-PREDICTION_ADAPTER_VERSION = "p8-canonical-prediction-adapter-v0.9"
+PREDICTION_ADAPTER_VERSION = "p8-canonical-prediction-adapter-v1.0"
 
 
 def _session_index(frame: pd.DataFrame) -> dict[date, int]:
     dates = pd.to_datetime(frame["date"], errors="raise").dt.date.tolist()
     return {d: i for i, d in enumerate(dates)}
+
+
+def _sig(**anchors: date) -> tuple[str, ...]:
+    return tuple(f"{name.upper()}:{value.isoformat()}" for name, value in anchors.items())
 
 
 def _candidate_id(
@@ -90,6 +94,7 @@ def _prediction(
     depth_pct: float | None = None,
     detector_faults: tuple[str, ...] = (),
     candidate_semantics: str = "CONFIRMED_STRUCTURE",
+    structural_signature: tuple[str, ...] = (),
 ) -> MorphologyPrediction:
     return MorphologyPrediction(
         candidate_id=_candidate_id(pattern, start, end, pivot_date, candidate_semantics),
@@ -102,6 +107,7 @@ def _prediction(
         detector_status=detector_status,
         detector_faults=detector_faults,
         candidate_semantics=candidate_semantics,
+        structural_signature=structural_signature,
     )
 
 
@@ -118,7 +124,6 @@ def _cwh_status(body_state: CupBodyState, handle_state: HandleState) -> str:
 
 
 def _db_right_edge_is_open(landmarks, *, trough_2_date: date) -> bool:
-    """A DB right edge is open only while no later confirmed P1 high exists."""
     return not any(
         item.type == LandmarkType.SWING_HIGH and item.price_date > trough_2_date
         for item in landmarks
@@ -135,13 +140,7 @@ def _segment_key(segment) -> tuple:
 
 
 def extract_core_morphology_predictions(frame: pd.DataFrame, *, asof_date: date) -> list[MorphologyPrediction]:
-    """Emit DEVELOPMENT predictions from the canonical landmark-first stack.
-
-    v0.9 keeps explicit right-edge observations, but a Double Bottom completion
-    observation exists only while the W truly has an open right edge. Once a
-    later P1 swing high is confirmed, the historical W is no longer extended to
-    the current as-of horizon.
-    """
+    """Emit PIT-safe DEVELOPMENT predictions with stable structural signatures."""
     if frame.empty:
         return []
 
@@ -184,6 +183,7 @@ def extract_core_morphology_predictions(frame: pd.DataFrame, *, asof_date: date)
                 detector_status=assessment.state.value,
                 depth_pct=segment.depth_pct,
                 detector_faults=tuple(item.value for item in assessment.faults),
+                structural_signature=_sig(left_high=segment.start.price_date, base_low=segment.trough.price_date),
             )
         )
 
@@ -199,12 +199,19 @@ def extract_core_morphology_predictions(frame: pd.DataFrame, *, asof_date: date)
                 depth_pct=observation.depth_from_start_pct,
                 detector_faults=tuple(item.value for item in observation.faults),
                 candidate_semantics=f"OPEN_RIGHT_EDGE:{OPEN_RIGHT_EDGE_FLAT_VERSION}",
+                structural_signature=_sig(left_high=observation.start.price_date, base_low=observation.observed_low_date),
             )
         )
 
     for geometry in assemble_multiturn_double_bottoms(ordered, landmarks, asof_date=asof_date):
         assessment = assess_double_bottom(geometry)
         pivot = double_bottom_pivot(geometry)
+        db_signature = _sig(
+            left_high=geometry.left_high.price_date,
+            trough_1=geometry.trough_1.price_date,
+            middle_peak=geometry.middle_peak.price_date,
+            trough_2=geometry.trough_2.price_date,
+        )
         predictions.append(
             _prediction(
                 pattern="DOUBLE_BOTTOM",
@@ -215,6 +222,7 @@ def extract_core_morphology_predictions(frame: pd.DataFrame, *, asof_date: date)
                 detector_status=assessment.state.value,
                 depth_pct=geometry.overall_depth_pct,
                 detector_faults=tuple(item.value for item in assessment.faults),
+                structural_signature=db_signature,
             )
         )
 
@@ -235,6 +243,7 @@ def extract_core_morphology_predictions(frame: pd.DataFrame, *, asof_date: date)
                             f"OPEN_RIGHT_EDGE_DOUBLE_BOTTOM:{OPEN_RIGHT_EDGE_DOUBLE_BOTTOM_VERSION}:"
                             f"TROUGH2={geometry.trough_2.price_date.isoformat()}"
                         ),
+                        structural_signature=db_signature,
                     )
                 )
 
@@ -259,6 +268,7 @@ def extract_core_morphology_predictions(frame: pd.DataFrame, *, asof_date: date)
                 depth_pct=observation.depth_pct,
                 detector_faults=tuple(item.value for item in observation.faults),
                 candidate_semantics=semantics,
+                structural_signature=_sig(left_rim=observation.left_rim.price_date, cup_low=observation.trough.price_date),
             )
         )
 
@@ -290,6 +300,12 @@ def extract_core_morphology_predictions(frame: pd.DataFrame, *, asof_date: date)
                     detector_status=_cwh_status(body.state, handle_assessment.state),
                     depth_pct=geometry.depth_pct,
                     detector_faults=body_faults + tuple(item.value for item in handle_assessment.faults),
+                    structural_signature=_sig(
+                        left_rim=geometry.left_rim.price_date,
+                        cup_low=geometry.trough.price_date,
+                        right_rim=geometry.right_rim.price_date,
+                        handle_low=handle_geometry.handle_low.price_date,
+                    ),
                 )
             )
 
@@ -310,6 +326,12 @@ def extract_core_morphology_predictions(frame: pd.DataFrame, *, asof_date: date)
                     depth_pct=geometry.depth_pct,
                     detector_faults=body_faults + tuple(item.value for item in observation.faults),
                     candidate_semantics=f"OPEN_RIGHT_EDGE_HANDLE:{OPEN_RIGHT_EDGE_HANDLE_VERSION}",
+                    structural_signature=_sig(
+                        left_rim=geometry.left_rim.price_date,
+                        cup_low=geometry.trough.price_date,
+                        right_rim=geometry.right_rim.price_date,
+                        handle_low=observation.handle_low.price_date,
+                    ),
                 )
             )
 
@@ -324,6 +346,7 @@ def extract_core_morphology_predictions(frame: pd.DataFrame, *, asof_date: date)
                     pivot_date=pivot.pivot_source_date,
                     detector_status="CUP_WITHOUT_HANDLE_RECOGNIZED",
                     depth_pct=geometry.depth_pct,
+                    structural_signature=_sig(left_rim=geometry.left_rim.price_date, cup_low=geometry.trough.price_date),
                 )
             )
 
