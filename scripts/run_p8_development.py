@@ -24,6 +24,10 @@ from oneil_patterns.validation.source_dimension_eval import (
     EVALUATOR_VERSION,
     evaluate_positive_development_label,
 )
+from oneil_patterns.validation.structural_diagnostics import (
+    STRUCTURAL_DIAGNOSTIC_VERSION,
+    extract_structural_diagnostics,
+)
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -45,6 +49,7 @@ def _run_one(label, args) -> dict:
     routed = route_development_ohlcv(label.symbol, context_start, label.asof_date)
     predictions = extract_core_morphology_predictions(routed.frame, asof_date=label.asof_date)
     cup_body_diagnostics = extract_cup_body_diagnostics(routed.frame, asof_date=label.asof_date)
+    structural_diagnostics = extract_structural_diagnostics(routed.frame, asof_date=label.asof_date)
     agreement = evaluate_positive_development_label(
         label,
         predictions,
@@ -75,6 +80,8 @@ def _run_one(label, args) -> dict:
         "cup_body_diagnostic_count": len(cup_body_diagnostics),
         "cup_body_state_counts": cup_body_state_counts,
         "cup_body_diagnostics": cup_body_diagnostics,
+        "structural_diagnostic_version": STRUCTURAL_DIAGNOSTIC_VERSION,
+        "structural_diagnostics": structural_diagnostics,
     }
 
 
@@ -115,6 +122,7 @@ def main() -> int:
         "pivot_adapter_version": PIVOT_ADAPTER_VERSION,
         "evaluator_version": EVALUATOR_VERSION,
         "cup_body_diagnostic_version": CUP_BODY_DIAGNOSTIC_VERSION,
+        "structural_diagnostic_version": STRUCTURAL_DIAGNOSTIC_VERSION,
         "context_calendar_days": args.context_calendar_days,
         "boundary_tolerance_days": args.boundary_tolerance_days,
         "pivot_date_tolerance_days": args.pivot_date_tolerance_days,
@@ -130,7 +138,8 @@ def main() -> int:
             "All input bars are truncated at each label asof_date.",
             "Source dimensions are scored only at their published precision and comparable semantic role.",
             "Corporate-action factors alter comparison basis only; source prices stay immutable.",
-            "Detector status/faults and cup-body ledger are diagnostic evidence separate from source-dimension agreement.",
+            "Detector status/faults and diagnostic ledgers are evidence separate from source-dimension agreement.",
+            "P1/P2 structural diagnostics use canonical label-agnostic landmark/segment construction only.",
             "No return, CAGR, PF, FWD1, breakout-performance, or entry-optimization input is used.",
         ],
     }
