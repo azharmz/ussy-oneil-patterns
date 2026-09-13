@@ -17,16 +17,17 @@ def test_rounded_u_is_recognized():
     assert result.research_bands_pass is True
 
 
-def test_sharp_v_is_rejected_by_research_morphology():
+def test_sharp_v_is_explicit_ambiguity_in_v2():
     result = assess_cup_body(_by_name()["sharp_v"].geometry)
-    assert result.state == CupBodyState.REJECTED
+    assert result.state == CupBodyState.AMBIGUOUS
     assert CupBodyFault.SHARP_V in result.faults
     assert result.theory_gates_pass is True
+    assert result.research_bands_pass is False
 
 
-def test_double_bottom_w_is_rejected_as_fragmented_bottom():
+def test_double_bottom_w_is_ambiguous_as_fragmented_bottom():
     result = assess_cup_body(_by_name()["double_bottom_w"].geometry)
-    assert result.state == CupBodyState.REJECTED
+    assert result.state == CupBodyState.AMBIGUOUS
     assert CupBodyFault.FRAGMENTED_BOTTOM in result.faults
 
 
@@ -36,7 +37,7 @@ def test_flat_shallow_is_rejected_as_non_cup_research_fault():
     assert CupBodyFault.SHALLOW_NON_CUP in result.faults
 
 
-def test_wide_loose_is_rejected_as_fragmented_bottom():
+def test_wide_loose_is_ambiguous_as_fragmented_bottom():
     result = assess_cup_body(_by_name()["wide_loose"].geometry)
-    assert result.state == CupBodyState.REJECTED
+    assert result.state == CupBodyState.AMBIGUOUS
     assert CupBodyFault.FRAGMENTED_BOTTOM in result.faults
