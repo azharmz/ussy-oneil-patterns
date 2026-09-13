@@ -6,7 +6,7 @@ from typing import Iterable
 
 from .labels import CorpusSplit, LabelEvidence, LabelValue, SourcePrecision
 
-EVALUATOR_VERSION = "p8-source-dimension-eval-v0.1"
+EVALUATOR_VERSION = "p8-source-dimension-eval-v0.2"
 
 
 @dataclass(frozen=True, slots=True)
@@ -17,6 +17,11 @@ class MorphologyPrediction:
     may adapt a raw detector candidate, a production record, or another canonical
     #33 structure into this shape. Missing facts stay missing and are never inferred
     from the authoritative label.
+
+    `end_date` is the canonical detector's structural end. It must not be compared
+    to a source `window_end` unless the source end role is explicitly known to be a
+    structural-end landmark. The current corpus predates such a role field and may
+    use breakout dates as window ends.
     """
 
     candidate_id: str
@@ -78,7 +83,13 @@ def _pivot_validation_state(label: LabelEvidence, prediction: MorphologyPredicti
 
 
 def _boundary_validation_state(label: LabelEvidence) -> str:
-    prefix = "FULL_SOURCE_ANCHORS" if label.window_end is not None else "START_ONLY_SOURCE_ANCHOR"
+    if label.window_end is None:
+        prefix = "START_ONLY_SOURCE_ANCHOR"
+    else:
+        # Current corpus `window_end` is a source-window boundary and can be a
+        # breakout date. Until a versioned role is recorded, only start is
+        # structurally comparable to MorphologyPrediction.start_date.
+        prefix = "START_SCORED_SOURCE_END_ROLE_UNSPECIFIED"
     return f"{prefix}_{label.window_start_precision.value}_START"
 
 
@@ -90,11 +101,17 @@ def evaluate_positive_development_label(
     pivot_date_tolerance_days: int = 3,
     pivot_price_tolerance_pct: float = 0.01,
 ) -> SourceDimensionAgreement:
-    """Compare one authoritative DEVELOPMENT label only on published dimensions.
+    """Compare one authoritative DEVELOPMENT label only on comparable dimensions.
 
     The authoritative label never supplies missing detector facts. MONTH precision
     is scored at month precision. A source pivot remains immutable; an explicit
     corporate-action adjustment factor only changes the comparison basis.
+
+    The legacy corpus `window_end` is deliberately not scored against detector
+    `end_date` because the source window may terminate at breakout rather than at
+    a structural landmark. This is fail-closed evaluator semantics: an end anchor
+    becomes scoreable only after its role is explicitly versioned.
+
     Detector ambiguity is reported but does not silently turn a source-dimension
     MATCH into a clean morphology verdict.
     """
@@ -102,7 +119,7 @@ def evaluate_positive_development_label(
     if label.split != CorpusSplit.DEVELOPMENT:
         raise ValueError("source-dimension evaluator is locked to DEVELOPMENT labels")
     if label.label != LabelValue.POSITIVE:
-        raise ValueError("v0.1 evaluates positive authoritative labels only")
+        raise ValueError("v0.2 evaluates positive authoritative labels only")
     if boundary_tolerance_days < 0 or pivot_date_tolerance_days < 0 or pivot_price_tolerance_pct < 0:
         raise ValueError("tolerances must be non-negative")
 
@@ -127,14 +144,11 @@ def evaluate_positive_development_label(
     for prediction in same_pattern:
         start_ok, start_error = _start_match(label, prediction, boundary_tolerance_days)
 
+        # Do not equate a source-window endpoint with canonical structural end.
+        # `window_end` remains preserved in LabelEvidence but is not scored until
+        # the corpus carries an explicit semantic role for that end anchor.
         end_error = None
         end_ok = True
-        if label.window_end is not None:
-            if prediction.end_date is None:
-                end_ok = False
-            else:
-                end_error = _distance(prediction.end_date, label.window_end)
-                end_ok = end_error <= boundary_tolerance_days
 
         pivot_date_error = None
         pivot_date_ok = True
@@ -160,7 +174,7 @@ def evaluate_positive_development_label(
         rank = (
             0 if boundary_ok else 1,
             0 if pivot_ok else 1,
-            start_error + (end_error or 0),
+            start_error,
             pivot_date_error if pivot_date_error is not None else 10**9,
             pivot_price_error if pivot_price_error is not None else float("inf"),
             prediction.start_date,
@@ -177,18 +191,22 @@ def evaluate_positive_development_label(
     rationale: list[str] = []
     if not boundary_ok:
         state = "BOUNDARY_DISAGREEMENT"
-        rationale.append("named pattern agrees but source-provided boundary anchors do not")
+        rationale.append("named pattern agrees but the source-provided start anchor does not")
     elif not pivot_ok:
         state = "LANDMARK_DISAGREEMENT"
-        rationale.append("named pattern and boundaries agree but a published pivot dimension does not")
+        rationale.append("named pattern and comparable boundary dimensions agree but a published pivot dimension does not")
     else:
         state = "MATCH"
-        rationale.append("named pattern agrees with all source-provided dimensions at their published precision")
+        rationale.append("named pattern agrees with all currently comparable source-provided dimensions at their published precision")
 
     if label.window_start_precision == SourcePrecision.MONTH:
         rationale.append(f"start evaluated only at MONTH precision ({label.window_start:%Y-%m})")
     if label.window_end is None:
         rationale.append("source does not provide an exact end anchor; end is not scored")
+    else:
+        rationale.append(
+            "source window end is preserved but not scored against detector structural end until its semantic role is explicitly versioned"
+        )
     if label.expected_pivot_source_date is None:
         rationale.append("source does not provide a detector-comparable pivot date; pivot date is not scored")
     if label.expected_pivot_level is None:

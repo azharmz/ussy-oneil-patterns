@@ -57,11 +57,14 @@ def test_month_precision_partial_boundary_matches_without_inventing_end():
     assert result.pivot_price_error_pct == 0.0
 
 
-def test_day_precision_full_anchor_scores_boundary():
+def test_source_window_end_is_not_assumed_to_be_structural_end():
     label = _label(
         pattern="FLAT_BASE",
         window_start=date(2023, 4, 4),
         window_start_precision=SourcePrecision.DAY,
+        # This source-window endpoint may be a breakout date; the current corpus
+        # does not yet carry a semantic role that makes it comparable to a P2
+        # structural end.
         window_end=date(2023, 5, 18),
         asof_date=date(2023, 5, 18),
         expected_pivot_source_date=date(2023, 4, 4),
@@ -70,19 +73,21 @@ def test_day_precision_full_anchor_scores_boundary():
     prediction = MorphologyPrediction(
         candidate_id="snps-flat",
         pattern="FLAT_BASE",
-        start_date=date(2023, 4, 5),
-        end_date=date(2023, 5, 18),
+        start_date=date(2023, 4, 4),
+        end_date=date(2023, 4, 25),
         pivot_source_date=date(2023, 4, 4),
         pivot_level=392.79,
-        detector_status="RECOGNIZED",
+        detector_status="FLAT_BASE_REJECTED",
     )
 
     result = evaluate_positive_development_label(label, [prediction])
 
     assert result.agreement_state == "MATCH"
-    assert result.start_error_days == 1
-    assert result.end_error_days == 0
+    assert result.start_error_days == 0
+    assert result.end_error_days is None
     assert result.pivot_date_error_days == 0
+    assert result.boundary_validation_state == "START_SCORED_SOURCE_END_ROLE_UNSPECIFIED_DAY_START"
+    assert any("semantic role" in item for item in result.rationale)
 
 
 def test_ctsh_split_factor_changes_only_comparison_basis():
