@@ -4,7 +4,7 @@ from __future__ import annotations
 import argparse
 from collections import Counter
 from dataclasses import asdict
-from datetime import date, timedelta
+from datetime import timedelta
 import json
 from pathlib import Path
 
@@ -48,6 +48,7 @@ def _run_one(label, args) -> dict:
         pivot_price_tolerance_pct=args.pivot_price_tolerance_pct,
     )
     same_pattern = [item for item in predictions if item.pattern == label.pattern]
+    pattern_counts = dict(sorted(Counter(item.pattern for item in predictions).items()))
     return {
         "example_id": label.example_id,
         "symbol": label.symbol,
@@ -59,9 +60,13 @@ def _run_one(label, args) -> dict:
         "fallback_reason": routed.fallback_reason,
         "input_row_count": len(routed.frame),
         "prediction_count": len(predictions),
+        "prediction_pattern_counts": pattern_counts,
         "same_pattern_prediction_count": len(same_pattern),
         "agreement": agreement.to_dict(),
         "same_pattern_predictions": [asdict(item) for item in same_pattern],
+        # Diagnostic-only: makes MISS_PATTERN and cross-family overlap auditable
+        # without re-running or changing detector semantics.
+        "all_predictions": [asdict(item) for item in predictions],
     }
 
 
@@ -75,7 +80,6 @@ def main() -> int:
         raise ValueError("pivot-price-tolerance-pct must be non-negative")
 
     all_labels = load_label_corpus_csv(ROOT / args.labels)
-    # Detector comparison is constructed exclusively from DEVELOPMENT rows.
     labels = [item for item in all_labels if item.split == CorpusSplit.DEVELOPMENT]
     if args.example_id:
         labels = [item for item in labels if item.example_id == args.example_id]
@@ -115,9 +119,9 @@ def main() -> int:
             "Only DEVELOPMENT labels enter detector comparison; VALIDATION remains locked.",
             "OHLCV routing is strict R2 -> Yahoo -> Tiingo; only SourceUnavailable permits fallback.",
             "All input bars are truncated at each label asof_date.",
-            "Source dimensions are scored only at their published precision.",
+            "Source dimensions are scored only at their published precision and comparable semantic role.",
             "Corporate-action factors alter comparison basis only; source prices stay immutable.",
-            "Detector ambiguity/status is reported separately from source-dimension agreement.",
+            "Detector status and fault codes are diagnostic evidence separate from source-dimension agreement.",
             "No return, CAGR, PF, FWD1, breakout-performance, or entry-optimization input is used.",
         ],
     }
