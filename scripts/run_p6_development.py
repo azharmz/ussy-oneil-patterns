@@ -8,8 +8,11 @@ from datetime import timedelta
 import json
 from pathlib import Path
 
+from oneil_patterns.landmarks.confirmed_window import extract_confirmed_window_landmarks
+from oneil_patterns.landmarks.excursion import ExcursionParams, extract_excursion_landmarks
 from oneil_patterns.validation.advanced_predictions import (
     ADVANCED_PREDICTION_ADAPTER_VERSION,
+    ASCENDING_LANDMARK_REVERSAL_PCT,
     extract_advanced_morphology_predictions,
 )
 from oneil_patterns.validation.candidate_identity import (
@@ -37,6 +40,30 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--example-id")
     parser.add_argument("--output", default="results/p6-authoritative-development.json")
     return parser.parse_args()
+
+
+def _mark_dict(mark) -> dict:
+    return {
+        "type": mark.type.value,
+        "price": float(mark.price),
+        "price_date": mark.price_date.isoformat(),
+        "confirmed_date": mark.confirmed_date.isoformat(),
+        "method": mark.method,
+    }
+
+
+def _ascending_diagnostics(frame) -> dict:
+    excursion = extract_excursion_landmarks(
+        frame,
+        ExcursionParams(reversal_pct=ASCENDING_LANDMARK_REVERSAL_PCT),
+    )
+    local = extract_confirmed_window_landmarks(frame)
+    return {
+        "excursion_6pct_count": len(excursion),
+        "confirmed_window_count": len(local),
+        "excursion_6pct_tail": [_mark_dict(item) for item in excursion[-40:]],
+        "confirmed_window_tail": [_mark_dict(item) for item in local[-80:]],
+    }
 
 
 def _run_one(label) -> dict:
@@ -72,6 +99,9 @@ def _run_one(label) -> dict:
             sorted(Counter(item.identity_state for item in identity_audit).items())
         ),
         "candidate_identities": [item.to_dict() for item in identity_audit],
+        "ascending_landmark_diagnostics": (
+            _ascending_diagnostics(routed.frame) if label.pattern == "ASCENDING_BASE" else None
+        ),
     }
 
 
@@ -119,7 +149,8 @@ def main() -> int:
         "results": results,
         "guardrails": [
             "Only DEVELOPMENT rows are scored; VALIDATION identities are listed but their source dimensions are never opened by this runner.",
-            "P6 advanced predictions consume frozen P1 and frozen core predictions without changing P3/P4/P5/P8 semantics.",
+            "P6 advanced predictions consume frozen core predictions without changing P3/P4/P5/P8 semantics.",
+            "Ascending landmark diagnostics are evidence-only and do not alter classification.",
             "Source dimensions are scored only where the authoritative source publishes a comparable dimension.",
             "R2 -> Yahoo -> Tiingo source routing is inherited unchanged from P8.",
             "All inputs are truncated at each authoritative as-of date.",
