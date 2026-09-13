@@ -17,219 +17,124 @@ Last updated: 2026-09-13
 | P3 Flat Base | FROZEN CORE | `flat-base-v2` |
 | P4 Double Bottom | FROZEN CORE | `double-bottom-v3`; 35-session gate retained |
 | P5 Cup family | FROZEN CORE | `cup-family-v2`; explicit right-edge CWH/CNH |
-| P6 Advanced patterns | COMPLETE — VALIDATION FAIL / FROZEN | authoritative 10-row DEVELOPMENT + untouched 2-row one-shot VALIDATION completed; not production-validated |
+| P6 Advanced patterns | **TERMINALLY DEFERRED / NOT PRODUCTION-VALIDATED** | Cycle 1 validation failed; Cycle 2 stopped at authoritative morphology-evidence boundary before VALIDATION |
 | P7 Fault/ambiguity layer | COMPLETE | ambiguity/fault states persisted |
 | P8 Labelled morphology validation | COMPLETE — CONDITIONAL PASS | 20 DEVELOPMENT examples + one frozen NFLX VALIDATION execution |
-| P9 Productionization | COMPLETE / FROZEN v2 | production directly consumes frozen P8 canonical predictions; no duplicate detector path |
+| P9 Productionization | COMPLETE / FROZEN v2 | production consumes frozen P8 core predictions only |
 
-## Frozen core stack
+## Frozen production core
 
-- Flat: `flat-base-v2`
-- Double Bottom: `double-bottom-v3`
-- Cup family: `cup-family-v2`
-- canonical prediction adapter: `p8-canonical-prediction-adapter-v1.1`
-- pivot adapter: `p8-pivot-adapter-v0.2`
-- source evaluator: `p8-source-dimension-eval-v0.5`
-- candidate identity audit: `p8-candidate-identity-audit-v0.4`
-- production base identity: `core-base-id-v1`
-- production lineage: `core-lineage-v1`
-- production schema: `oneil-pattern-output-v2`
-- production engine: `33-core-p8-frozen-v1`
-- OHLCV priority: R2 -> Yahoo/yfinance -> Tiingo; fallback only on genuine unavailability
+Production schema `oneil-pattern-output-v2` remains limited to:
 
-Freeze record: `docs/decisions/p8-development-freeze-v1.md`.
-Final verdict: `docs/decisions/p8-final-verdict.md`.
-Production contract: `docs/production-output-contract-v2.md`.
+- `FLAT_BASE` — `flat-base-v2`
+- `DOUBLE_BOTTOM` — `double-bottom-v3`
+- `CUP_WITHOUT_HANDLE` — `cup-family-v2`
+- `CUP_WITH_HANDLE` — `cup-family-v2`
 
-## P6 authoritative validation cycle
+Canonical adapter: `p8-canonical-prediction-adapter-v1.1`.
+Production engine: `33-core-p8-frozen-v1`.
+Base identity: `core-base-id-v1`.
+Lineage: `core-lineage-v1`.
 
-P6 advanced families:
+P8 frozen DEVELOPMENT: 20/20 source-dimension `MATCH`, zero boundary/landmark/pattern miss, zero true identity `STATUS_CONFLICT`. NFLX untouched VALIDATION was opened once after freeze and structurally matched uniquely at start `2023-02-03`, while retaining frozen `CUP_WITH_HANDLE_AMBIGUOUS / BELOW_CUP_MIDPOINT` debt. No post-validation tuning is allowed.
 
-- `ASCENDING_BASE`
-- `BASE_ON_BASE`
+## P6 Cycle 1 — historical failed validation
 
-The earlier source-grounded v2 conditional verdict was superseded by a full authoritative validation cycle. Frozen P3/P4/P5/P8 core was not reopened.
+Cycle 1 used 5 authoritative `ASCENDING_BASE` and 5 authoritative `BASE_ON_BASE` DEVELOPMENT positives, then opened locked STT and C once after freeze.
 
-### DEVELOPMENT freeze
+DEVELOPMENT: 10/10 source-dimension `MATCH`, identity `STATUS_CONFLICT=0`, but morphology presentation was weak: Ascending Base 1 recognized / 1 ambiguous / 3 rejected; Base-on-Base 1 recognized / 4 ambiguous.
 
-Corpus: `data/p6/labels_v0.csv` DEVELOPMENT split.
+Untouched VALIDATION:
 
-Coverage:
+- STT `ASCENDING_BASE`: source dimensions MATCH, detector `ASCENDING_BASE_REJECTED`;
+- C `BASE_ON_BASE`: source dimensions MATCH, detector `BASE_ON_BASE_AMBIGUOUS`.
 
-- ASCENDING_BASE: 5 authoritative positives
-- BASE_ON_BASE: 5 authoritative positives
+Cycle 1 verdict: `VALIDATION FAIL / NOT PRODUCTION-VALIDATED`. STT/C are consumed evidence and cannot be reused as untouched validation.
 
-Frozen evidence:
+## P6 Cycle 2 — terminal evidence-boundary stop
 
-```text
-workflow run                   = 34748254127
-artifact id                    = 10315076061
-artifact digest                = sha256:332f7fc9aab753280b386491cb59d3a48ad4f258374c7e40b804309eb93425e8
-repository tests               = 235 passed
-source-dimension MATCH         = 10 / 10
-candidate STATUS_CONFLICT      = 0
-```
+Fresh locked corpus: `data/p6/labels_cycle2_v0.csv`.
 
-Detector-state evidence at DEVELOPMENT freeze:
+DEVELOPMENT:
+
+- `ASCENDING_BASE`: AVGO, TME, CCJ, SNOW, NAVN;
+- `BASE_ON_BASE`: META, TRV, SE, JLL, SEI.
+
+Untouched VALIDATION reserved before DEVELOPMENT scoring:
+
+- MRX — `ASCENDING_BASE`;
+- CAT — `BASE_ON_BASE`.
+
+Final Cycle 2 DEVELOPMENT evidence:
 
 ```text
-ASCENDING_BASE_RECOGNIZED      = 1
-ASCENDING_BASE_AMBIGUOUS       = 1
-ASCENDING_BASE_REJECTED        = 3
-BASE_ON_BASE_RECOGNIZED        = 1
-BASE_ON_BASE_AMBIGUOUS         = 4
+all DEVELOPMENT                     9 MATCH / 1 MISS_PATTERN
+candidate identity STATUS_CONFLICT  0
+
+ASCENDING_BASE                      5/5 MATCH
+candidate resolution                5/5 SOURCE_EQUIVALENT_MULTIPLE
+presentation detector state         4 RECOGNIZED / 1 REJECTED
+
+BASE_ON_BASE                        4/5 MATCH / 1 MISS_PATTERN
+candidate resolution                4 SOURCE_EQUIVALENT_MULTIPLE / 1 NONE
+presentation detector state         4 AMBIGUOUS / 1 NO_MATCH
 ```
 
-Freeze record: `docs/decisions/p6-development-freeze-v1.md`.
+Execution commit: `9cab74ace28a55f7715b7bf1bdecddf2cee758e4`.
+Workflow run: `34753213531`.
+Artifact id: `10316012884`.
+Artifact digest: `sha256:303276ed83abae1f74b83f690d102fdf4c5a6a9c7e2bb1aada8e31d50a93db26`.
 
-### Untouched one-shot VALIDATION
+### Terminal blockers
 
-Locked before freeze:
+**Ascending Base candidate identity:** authoritative sources generally provide pattern name/pivot and sometimes approximate start, but not exact pullback #1/#2/#3 landmarks or detector-comparable boundaries. All five Cycle 2 examples therefore have multiple source-equivalent candidates. Selecting the candidate with the most convenient detector state would be circular.
 
-- `p6-label-0011` — STT `ASCENDING_BASE`
-- `p6-label-0012` — C `BASE_ON_BASE`
+**Base-on-Base `mostly above`:** authoritative guidance permits the second base to be `entirely or mostly above` the first but does not provide a universal quantitative overlap/support threshold. Inventing 50%, 60%, 70%, 75%, etc. would create unsupported precision.
 
-One-shot execution:
+**Core composition boundary:** META is a genuine `MISS_PATTERN`. Repairing it by loosening frozen P3/P4/P5/P8 constituent morphology would reopen frozen core through P6 and is prohibited.
 
-```text
-commit                         = 2c10165e67c1486459ddf191021243ad70e90f7b
-workflow run                   = 34750413835
-artifact id                    = 10315775412
-artifact digest                = sha256:618c72a7accbb9b5434db9040e2bad645bf0435de21b32ffac019bfe4d83ca16
-source-dimension MATCH         = 2 / 2
-candidate STATUS_CONFLICT      = 0
-STT detector state             = ASCENDING_BASE_REJECTED
-C detector state               = BASE_ON_BASE_AMBIGUOUS
-```
+### Why Cycle 2 VALIDATION was not opened
 
-The one-shot workflow path was removed in commit `da251cee5f8ffbc3038a198950d3b824f4b4d458` immediately after execution.
+Cycle 2 DEVELOPMENT did not reach a defensible specification/candidate-identity freeze gate. Opening MRX/CAT would consume untouched evidence without resolving the specification problem. Therefore MRX and CAT remain untouched; they are neither DEVELOPMENT nor validation results.
 
-### Final P6 verdict
+## Terminal P6 verdict
 
-**VALIDATION FAIL / FROZEN — NOT PRODUCTION-VALIDATED**.
+**DEFERRED / NOT PRODUCTION-VALIDATED / FROZEN UNTIL NEW AUTHORITATIVE MORPHOLOGY EVIDENCE EXISTS**.
 
-The authoritative source dimensions matched, but neither untouched positive validation example was recognized by frozen morphology. Under the same validation discipline used for core patterns, sparse pivot/pattern agreement cannot override rejected/ambiguous detector state.
+Do not open Cycle 3 merely because more articles provide another ticker, pattern name, pivot, or approximate start. Reopening requires a genuinely new evidence type that resolves at least one missing operational dimension, for example:
 
-Consequences:
+1. exact authoritative Ascending Base pullback landmarks or unambiguous detector-comparable boundaries;
+2. authoritative quantitative Base-on-Base `mostly above` / prior-base-top support semantics; or
+3. an authoritative labelled MarketSurge/O'Neil dataset that independently resolves candidate identity.
 
-- P6 remains outside `oneil-pattern-output-v2`;
-- STT/C cannot be reused as untouched validation in a future cycle;
-- no post-validation threshold or severity tuning is allowed;
-- Base-on-Base “mostly above” remains unresolved because authoritative guidance supplies no universal numeric overlap boundary;
-- a new cycle requires new authoritative morphology-rich DEVELOPMENT evidence and a new untouched VALIDATION set;
-- P3/P4/P5/P8 remain frozen.
+Canonical P6 records:
 
-Final verdict: `docs/decisions/p6-final-verdict.md`.
+- `data/p6/labels_cycle2_v0.csv`
+- `docs/p6-cycle2-source-audit.md`
+- `docs/decisions/p6-cycle2-terminal-verdict.md`
+- `docs/decisions/p6-final-verdict.md`
 
-## P8 DEVELOPMENT evidence at freeze
+Cycle 1 records/artifacts remain historical evidence and must not be removed.
 
-Canonical corpus: `data/p8/labels_v0.csv`.
+Final P6 documentation commit: `a4e38503913731c50589b51097cd8e3b580082f2`.
+Final CI run: `34753292331` — pytest SUCCESS; P6 DEVELOPMENT skipped; P8 DEVELOPMENT skipped.
 
-Coverage:
+## Production consequence
 
-- FLAT_BASE: 5
-- CUP_WITH_HANDLE: 5
-- DOUBLE_BOTTOM: 5
-- CUP_WITHOUT_HANDLE: 5
+No production promotion occurred for P6:
 
-Frozen DEVELOPMENT artifact:
+- `ASCENDING_BASE` remains outside `oneil-pattern-output-v2`;
+- `BASE_ON_BASE` remains outside `oneil-pattern-output-v2`;
+- frozen P3/P4/P5/P8 core remains unchanged.
 
-```text
-result_count                 = 20
-MATCH                        = 20
-BOUNDARY_DISAGREEMENT        = 0
-LANDMARK_DISAGREEMENT        = 0
-MISS_PATTERN                 = 0
-STATUS_CONFLICT              = 0
-```
+Downstream consumers must preserve explicit `RECOGNIZED` / `AMBIGUOUS` / `REJECTED` state, candidate/base/lineage identity, semantics, faults, and provenance. P6 must not be described as P8-equivalent or production-validated.
 
-Candidate identity states:
+## #33 stop boundary
 
-```text
-STABLE                        = 940
-MULTI_SEMANTIC_STABLE_STATUS  = 59
-LIFECYCLE_TRANSITION          = 9
-STATUS_CONFLICT               = 0
-```
+For the evidence currently available, #33 governance is complete:
 
-Freeze evidence commit: `2ed3dadcc354f56f4cb27401248daef60b1627fa`.
-Freeze workflow run: `34740880269`.
+- four core families are frozen and production-emitted under v2;
+- P6 advanced families are terminally deferred under explicit reopening conditions;
+- no further #33 detector work is authorized absent new authoritative morphology evidence satisfying the P6 reopening gate.
 
-## P8 Independent VALIDATION
-
-The locked NFLX `CUP_WITH_HANDLE` case was opened exactly once after freeze.
-
-Workflow run: `34741079533`.
-Artifact id: `10312408925`.
-
-Result:
-
-```text
-agreement_state         = MATCH
-candidate_resolution    = UNIQUE
-source start            = 2023-02-03
-matched start           = 2023-02-03
-start error             = 0 days
-matched detector state  = CUP_WITH_HANDLE_AMBIGUOUS
-candidate semantics     = OPEN_RIGHT_EDGE_HANDLE:p8-open-right-edge-handle-v0.1
-detector fault          = BELOW_CUP_MIDPOINT
-```
-
-The one-shot workflow path was removed after execution so NFLX is not repeatedly re-used as tuning evidence.
-
-## Final P8 verdict
-
-**CONDITIONAL PASS / FROZEN WITH VALIDATION DEBT** for the four core families.
-
-What passed:
-
-- source-grounded pattern representation;
-- PIT/right-edge semantics;
-- source precision and corporate-action comparison handling;
-- 20/20 DEVELOPMENT source-dimension agreement;
-- zero true candidate identity conflicts in the frozen DEVELOPMENT audit;
-- unique independent NFLX structural match at the authoritative start date.
-
-What remains debt:
-
-- NFLX remains `CUP_WITH_HANDLE_AMBIGUOUS` because of frozen `BELOW_CUP_MIDPOINT` severity;
-- the locked NFLX row intentionally did not score pivot/depth, so not every numeric CWH band received independent validation;
-- advanced pattern families do not inherit the core P8 evidence level.
-
-No frozen morphology threshold may now be changed from the NFLX result.
-
-## P9 production alignment
-
-Production v2 calls the exact canonical P8 prediction adapter rather than rebuilding landmarks/morphology independently.
-
-Frozen production output includes only the four P8-validated core families and persists:
-
-- canonical `candidate_id`;
-- stable exact-structure `base_id`;
-- conservative exact-anchor `lineage_id`;
-- `RECOGNIZED` / `AMBIGUOUS` / `REJECTED` status;
-- candidate semantics;
-- structural signature;
-- structural start/end;
-- pivot source date/level;
-- depth when available;
-- detector faults;
-- versioned P8 and production contracts.
-
-Production alignment regression suite: **224 tests passed** on workflow run `34741587492`.
-
-## Downstream contract / stop boundary
-
-#33 core is implementation-complete and frozen for the four P8 core families. P6 has now completed its requested same-standard authoritative validation cycle and is frozen with a validation-fail verdict.
-
-The next core work item remains **#34 Theory-faithful Candidate Generator**, which belongs in the CAN SLIM parent workstream rather than further #33 morphology tuning.
-
-A downstream #34 consumer must preserve:
-
-- `RECOGNIZED` / `AMBIGUOUS` / `REJECTED` state;
-- `candidate_id`, `base_id`, and `lineage_id`;
-- candidate semantics;
-- detector faults;
-- source/validation provenance where applicable.
-
-`AMBIGUOUS` must not be silently converted into either recognized or absent morphology. #34 must not reopen P8 or the frozen P6 cycle based on returns, CAGR, PF, FWD1, breakout outcomes or entry optimization.
+The next CAN SLIM workstream is #34 in the parent repository. This O'Neil Pattern repo/chat must not implement #34.
