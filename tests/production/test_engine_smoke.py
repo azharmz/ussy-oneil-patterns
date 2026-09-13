@@ -1,13 +1,12 @@
 from datetime import date, timedelta
 
 import pandas as pd
+import pytest
 
 from oneil_patterns.production.engine import analyze_security
 
 
 def _wave_frame():
-    # Repeated causal >8% excursions around a broadly stable price level so P1
-    # emits multiple alternating turns and downstream morphology code executes.
     anchors = [
         (100.0, 5),
         (88.0, 8),
@@ -22,11 +21,8 @@ def _wave_frame():
     closes = []
     previous = anchors[0][0]
     for target, count in anchors:
-        if count == 1:
-            segment = [target]
-        else:
-            step = (target - previous) / count
-            segment = [previous + step * (i + 1) for i in range(count)]
+        step = (target - previous) / count
+        segment = [previous + step * (i + 1) for i in range(count)]
         closes.extend(segment)
         previous = target
 
@@ -44,7 +40,7 @@ def _wave_frame():
     })
 
 
-def test_full_orchestrator_runs_deterministically_over_multi_swing_series():
+def test_full_orchestrator_is_deterministic_and_core_only():
     frame = _wave_frame()
     asof = pd.to_datetime(frame["date"].iloc[-1]).date()
 
@@ -53,18 +49,22 @@ def test_full_orchestrator_runs_deterministically_over_multi_swing_series():
 
     assert first
     assert [r.assessment_id for r in first] == [r.assessment_id for r in second]
-    assert all(r.labelled_validation_status == "P8_BLOCKED_ON_CORPUS" for r in first)
+    assert all(r.labelled_validation_status == "P8_CONDITIONAL_PASS_FROZEN" for r in first)
     assert all(r.asof_date == asof.isoformat() for r in first)
-    assert {r.pattern for r in first} & {"FLAT_BASE", "CUP_BODY", "DOUBLE_BOTTOM", "ASCENDING_BASE"}
+    assert {r.pattern for r in first} <= {
+        "FLAT_BASE",
+        "DOUBLE_BOTTOM",
+        "CUP_WITH_HANDLE",
+        "CUP_WITHOUT_HANDLE",
+    }
+    assert all(r.base_id.startswith("base_") for r in first)
+    assert all(r.lineage_id.startswith("lineage_") for r in first)
+    assert all(r.candidate_semantics for r in first)
 
 
 def test_orchestrator_rejects_future_rows():
     frame = _wave_frame()
     cutoff = pd.to_datetime(frame["date"].iloc[-2]).date()
 
-    try:
+    with pytest.raises(ValueError, match="future bars"):
         analyze_security("sec-1", "TEST", frame, cutoff)
-    except ValueError as exc:
-        assert "future bars" in str(exc)
-    else:
-        raise AssertionError("expected future-bar guard")
