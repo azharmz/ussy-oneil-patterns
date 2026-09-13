@@ -13,6 +13,10 @@ from oneil_patterns.validation.canonical_predictions import (
     extract_core_morphology_predictions,
 )
 from oneil_patterns.validation.corpus import load_label_corpus_csv
+from oneil_patterns.validation.cup_body_diagnostics import (
+    CUP_BODY_DIAGNOSTIC_VERSION,
+    extract_cup_body_diagnostics,
+)
 from oneil_patterns.validation.development_sources import route_development_ohlcv
 from oneil_patterns.validation.labels import CorpusSplit
 from oneil_patterns.validation.pivot_adapter import PIVOT_ADAPTER_VERSION
@@ -40,6 +44,7 @@ def _run_one(label, args) -> dict:
     context_start = label.window_start - timedelta(days=args.context_calendar_days)
     routed = route_development_ohlcv(label.symbol, context_start, label.asof_date)
     predictions = extract_core_morphology_predictions(routed.frame, asof_date=label.asof_date)
+    cup_body_diagnostics = extract_cup_body_diagnostics(routed.frame, asof_date=label.asof_date)
     agreement = evaluate_positive_development_label(
         label,
         predictions,
@@ -49,6 +54,7 @@ def _run_one(label, args) -> dict:
     )
     same_pattern = [item for item in predictions if item.pattern == label.pattern]
     pattern_counts = dict(sorted(Counter(item.pattern for item in predictions).items()))
+    cup_body_state_counts = dict(sorted(Counter(item["state"] for item in cup_body_diagnostics).items()))
     return {
         "example_id": label.example_id,
         "symbol": label.symbol,
@@ -64,9 +70,11 @@ def _run_one(label, args) -> dict:
         "same_pattern_prediction_count": len(same_pattern),
         "agreement": agreement.to_dict(),
         "same_pattern_predictions": [asdict(item) for item in same_pattern],
-        # Diagnostic-only: makes MISS_PATTERN and cross-family overlap auditable
-        # without re-running or changing detector semantics.
         "all_predictions": [asdict(item) for item in predictions],
+        "cup_body_diagnostic_version": CUP_BODY_DIAGNOSTIC_VERSION,
+        "cup_body_diagnostic_count": len(cup_body_diagnostics),
+        "cup_body_state_counts": cup_body_state_counts,
+        "cup_body_diagnostics": cup_body_diagnostics,
     }
 
 
@@ -106,6 +114,7 @@ def main() -> int:
         "prediction_adapter_version": PREDICTION_ADAPTER_VERSION,
         "pivot_adapter_version": PIVOT_ADAPTER_VERSION,
         "evaluator_version": EVALUATOR_VERSION,
+        "cup_body_diagnostic_version": CUP_BODY_DIAGNOSTIC_VERSION,
         "context_calendar_days": args.context_calendar_days,
         "boundary_tolerance_days": args.boundary_tolerance_days,
         "pivot_date_tolerance_days": args.pivot_date_tolerance_days,
@@ -121,7 +130,7 @@ def main() -> int:
             "All input bars are truncated at each label asof_date.",
             "Source dimensions are scored only at their published precision and comparable semantic role.",
             "Corporate-action factors alter comparison basis only; source prices stay immutable.",
-            "Detector status and fault codes are diagnostic evidence separate from source-dimension agreement.",
+            "Detector status/faults and cup-body ledger are diagnostic evidence separate from source-dimension agreement.",
             "No return, CAGR, PF, FWD1, breakout-performance, or entry-optimization input is used.",
         ],
     }
