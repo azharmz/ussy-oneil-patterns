@@ -6,7 +6,7 @@ from typing import Iterable
 
 from .source_dimension_eval import MorphologyPrediction
 
-CANDIDATE_IDENTITY_AUDIT_VERSION = "p8-candidate-identity-audit-v0.2"
+CANDIDATE_IDENTITY_AUDIT_VERSION = "p8-candidate-identity-audit-v0.3"
 
 
 @dataclass(frozen=True, slots=True)
@@ -35,14 +35,6 @@ def _rounded(value: float | None, digits: int) -> str:
 
 
 def structural_identity_signature(prediction: MorphologyPrediction) -> tuple[str, ...]:
-    """Return a source-independent structural identity key.
-
-    Canonical predictions should provide pattern-specific landmark signatures.
-    Rolling/right-edge horizons and candidate semantics are deliberately absent
-    so an open observation can mature without changing identity. The fallback is
-    retained only for regression/backward compatibility and is not the desired
-    production path.
-    """
     if prediction.structural_signature:
         return (prediction.pattern, *prediction.structural_signature)
     return (
@@ -59,6 +51,38 @@ def _stable_identity_id(signature: tuple[str, ...]) -> str:
     return f"p8ident_{digest}"
 
 
+def _is_right_edge_semantics(value: str) -> bool:
+    return value.startswith("OPEN_RIGHT_EDGE")
+
+
+def _is_maturity_lifecycle(members: list[MorphologyPrediction]) -> bool:
+    """Return True only for the explicit TOO_SHORT -> mature right-edge path.
+
+    A structural identity can be known before a minimum-duration gate is met.
+    If the confirmed form is rejected for TOO_SHORT and an explicit right-edge
+    observation of the same structural signature later becomes non-rejected,
+    the state difference is a PIT lifecycle transition, not an identity clash.
+    Other status differences remain STATUS_CONFLICT.
+    """
+    confirmed = [item for item in members if item.candidate_semantics == "CONFIRMED_STRUCTURE"]
+    right_edge = [item for item in members if _is_right_edge_semantics(item.candidate_semantics)]
+    if not confirmed or not right_edge:
+        return False
+
+    short_confirmed = [
+        item
+        for item in confirmed
+        if item.detector_status and item.detector_status.endswith("_REJECTED")
+        and "TOO_SHORT" in item.detector_faults
+    ]
+    mature_right_edge = [
+        item
+        for item in right_edge
+        if item.detector_status and not item.detector_status.endswith("_REJECTED")
+    ]
+    return bool(short_confirmed and mature_right_edge)
+
+
 def audit_candidate_identities(predictions: Iterable[MorphologyPrediction]) -> list[CandidateIdentityAudit]:
     grouped: dict[tuple[str, ...], list[MorphologyPrediction]] = {}
     for prediction in predictions:
@@ -70,7 +94,9 @@ def audit_candidate_identities(predictions: Iterable[MorphologyPrediction]) -> l
         statuses = tuple(sorted({item.detector_status or "NONE" for item in members}))
         semantics = tuple(sorted({item.candidate_semantics for item in members}))
         end_dates = tuple(sorted({item.end_date.isoformat() for item in members if item.end_date is not None}))
-        if len(statuses) > 1:
+        if len(statuses) > 1 and _is_maturity_lifecycle(members):
+            identity_state = "LIFECYCLE_TRANSITION"
+        elif len(statuses) > 1:
             identity_state = "STATUS_CONFLICT"
         elif len(semantics) > 1:
             identity_state = "MULTI_SEMANTIC_STABLE_STATUS"
