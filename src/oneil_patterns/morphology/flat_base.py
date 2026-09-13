@@ -57,13 +57,13 @@ def _region(frame: pd.DataFrame, segment: BaseSegmentCandidate) -> pd.DataFrame:
 def assess_flat_base(frame: pd.DataFrame, segment: BaseSegmentCandidate) -> FlatBaseAssessment:
     """Assess Flat Base morphology using theory gates plus research tightness bands.
 
-    Frozen theory gates:
+    Theory gates:
     - duration >= 25 sessions;
     - depth <= 15%.
 
-    Tightness/wide-loose thresholds are explicitly research-only. They are used
-    to make ambiguity/fault handling testable and must not be presented as
-    official O'Neil/IBD numeric rules or optimized against trading outcomes.
+    Tightness/wide-loose thresholds are explicitly research-only. P8 v0.2 keeps
+    `WIDE_LOOSE` as fault evidence but no longer lets that research-only band
+    create a hard rejection when the theory gates pass.
     """
     duration_gate = segment.duration_sessions >= MIN_DURATION_SESSIONS
     depth_gate = segment.depth_pct <= MAX_DEPTH_PCT
@@ -77,7 +77,7 @@ def assess_flat_base(frame: pd.DataFrame, segment: BaseSegmentCandidate) -> Flat
             normalized_high_low_range=None,
             close_dispersion_pct=None,
             upper_band_fraction_5pct=None,
-            evidence={"reason": "missing_or_empty_region", "version": "flat-base-v0.1"},
+            evidence={"reason": "missing_or_empty_region", "version": "flat-base-v0.2"},
         )
 
     base_high = float(region["high"].max())
@@ -114,9 +114,12 @@ def assess_flat_base(frame: pd.DataFrame, segment: BaseSegmentCandidate) -> Flat
         and close_dispersion <= TIGHT_MAX_CLOSE_DISPERSION
     )
 
-    if not duration_gate or not depth_gate or wide_loose:
+    if not duration_gate or not depth_gate:
         state = FlatBaseState.REJECTED
-        reason = "hard_or_wide_loose_fault"
+        reason = "hard_gate_failure"
+    elif wide_loose:
+        state = FlatBaseState.AMBIGUOUS
+        reason = "research_wide_loose_fault_requires_caution"
     elif boundary_context:
         state = FlatBaseState.AMBIGUOUS
         reason = "boundary_context_requires_caution"
@@ -136,11 +139,12 @@ def assess_flat_base(frame: pd.DataFrame, segment: BaseSegmentCandidate) -> Flat
         upper_band_fraction_5pct=upper_band_fraction,
         faults=tuple(faults),
         evidence={
-            "version": "flat-base-v0.1",
+            "version": "flat-base-v0.2",
             "reason": reason,
             "min_duration_sessions": MIN_DURATION_SESSIONS,
             "max_depth_pct": MAX_DEPTH_PCT,
             "tightness_policy": "research_only",
+            "wide_loose_state_policy": "AMBIGUOUS_NOT_HARD_REJECT",
             "tight_max_normalized_range": TIGHT_MAX_NORMALIZED_RANGE,
             "tight_max_close_dispersion": TIGHT_MAX_CLOSE_DISPERSION,
             "wide_loose_min_normalized_range": WIDE_LOOSE_MIN_NORMALIZED_RANGE,
