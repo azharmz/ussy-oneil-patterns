@@ -9,8 +9,12 @@ from oneil_patterns.landmarks.confirmed_window import extract_confirmed_window_l
 from oneil_patterns.landmarks.excursion import ExcursionParams, extract_excursion_landmarks
 from oneil_patterns.landmarks.fusion import fuse_landmark_sources
 from oneil_patterns.landmarks.model import LandmarkType
-from oneil_patterns.morphology.ascending_base import build_ascending_base_geometry
-from oneil_patterns.morphology.ascending_base_detector import MAX_DURATION_SESSIONS, assess_ascending_base
+from oneil_patterns.morphology.ascending_base_right_edge import (
+    ASCENDING_BASE_RIGHT_EDGE_CONTRACT_VERSION,
+    assess_ascending_base_right_edge,
+    build_ascending_base_right_edge_geometry,
+)
+from oneil_patterns.morphology.ascending_base_detector import MAX_DURATION_SESSIONS
 from oneil_patterns.morphology.base_on_base import (
     BaseRegionSummary,
     assess_base_on_base,
@@ -19,11 +23,9 @@ from oneil_patterns.morphology.base_on_base import (
 from oneil_patterns.validation.canonical_predictions import extract_core_morphology_predictions
 from oneil_patterns.validation.source_dimension_eval import MorphologyPrediction
 
-ADVANCED_PREDICTION_ADAPTER_VERSION = "p6-advanced-prediction-adapter-v0.2"
+ADVANCED_PREDICTION_ADAPTER_VERSION = "p6-advanced-prediction-adapter-v0.3"
 ASCENDING_LANDMARK_REVERSAL_PCT = 0.06
 _ASCENDING_SEQUENCE = (
-    LandmarkType.SWING_HIGH,
-    LandmarkType.SWING_LOW,
     LandmarkType.SWING_HIGH,
     LandmarkType.SWING_LOW,
     LandmarkType.SWING_HIGH,
@@ -49,10 +51,6 @@ def _candidate_id(pattern: str, *parts: str) -> str:
 
 
 def _canonical_landmarks(frame: pd.DataFrame, *, asof_date: date):
-    # P6-specific observation only: MarketSurge's documented Ascending Base
-    # recognition envelope extends down to 6% pullbacks. Reuse the frozen causal
-    # excursion algorithm with that source-grounded family floor without changing
-    # the P1 default or any frozen core detector.
     primary = extract_excursion_landmarks(
         frame,
         ExcursionParams(reversal_pct=ASCENDING_LANDMARK_REVERSAL_PCT),
@@ -77,28 +75,38 @@ def _ascending_predictions(frame: pd.DataFrame, *, asof_date: date) -> list[Morp
                 return
             seen.add(dates)
             try:
-                geometry = build_ascending_base_geometry(index, *chosen)
+                geometry = build_ascending_base_right_edge_geometry(
+                    frame,
+                    index,
+                    *chosen,
+                    asof_date=asof_date,
+                )
             except ValueError:
                 return
-            assessment = assess_ascending_base(geometry)
+            assessment = assess_ascending_base_right_edge(geometry)
             pivot = geometry.peak_3
             predictions.append(
                 MorphologyPrediction(
                     candidate_id=_candidate_id(
                         "ASCENDING_BASE",
                         *(item.isoformat() for item in dates),
+                        geometry.observed_trough_3_date.isoformat(),
                     ),
                     pattern="ASCENDING_BASE",
                     start_date=geometry.peak_1.price_date,
-                    end_date=geometry.recovery_peak.price_date,
+                    end_date=geometry.observed_trough_3_date,
                     pivot_source_date=pivot.price_date,
                     pivot_level=float(pivot.price),
                     depth_pct=float(geometry.max_pullback_pct),
                     detector_status=assessment.state.value,
                     detector_faults=tuple(item.value for item in assessment.faults),
-                    candidate_semantics=f"P6_6PCT_CAUSAL_ALTERNATING_SUBSEQUENCE:{ADVANCED_PREDICTION_ADAPTER_VERSION}",
+                    candidate_semantics=(
+                        f"RIGHT_EDGE_THIRD_PULLBACK:{ASCENDING_BASE_RIGHT_EDGE_CONTRACT_VERSION}:"
+                        f"{ADVANCED_PREDICTION_ADAPTER_VERSION}"
+                    ),
                     structural_signature=tuple(
-                        f"{mark.type.value}:{mark.price_date.isoformat()}" for mark in chosen
+                        [f"{mark.type.value}:{mark.price_date.isoformat()}" for mark in chosen]
+                        + [f"OBSERVED_LOW:{geometry.observed_trough_3_date.isoformat()}"]
                     ),
                 )
             )
