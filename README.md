@@ -10,12 +10,13 @@ Canonical implementation repository for CAN SLIM workstream **#33 — O'Neil Pat
 > 2. read `docs/progress-board.md`;
 > 3. read `docs/decisions/p8-development-freeze-v1.md`;
 > 4. read `docs/decisions/p8-final-verdict.md`;
-> 5. read `docs/production-output-contract-v2.md` before building a downstream consumer;
-> 6. inspect the latest commits only after the frozen records above are understood.
+> 5. read `docs/decisions/p6-final-verdict.md` before changing advanced-pattern semantics;
+> 6. read `docs/production-output-contract-v2.md` before building a downstream consumer;
+> 7. inspect the latest commits only after the frozen records above are understood.
 >
 > For #33/P8, this repository is the source of truth. The parent `azharmz/ussy-canslim-research` is roadmap/HQ and must not host a parallel pattern engine.
 >
-> Current state: core #33 is frozen with a **CONDITIONAL PASS** and production schema v2 is aligned to the exact frozen P8 adapter. Do not reopen morphology tuning from NFLX or from trading outcomes.
+> Current state: core #33 is frozen with a **CONDITIONAL PASS** and production schema v2 is aligned to the exact frozen P8 adapter. P6 advanced patterns are separately frozen at **CONDITIONAL PASS WITH VALIDATION DEBT** and remain outside core production v2. Do not reopen morphology tuning from NFLX, P6 examples, or trading outcomes.
 
 ## Parent contract
 
@@ -51,7 +52,7 @@ THEORY
 
 ## Current phase
 
-**#33 core morphology and production output are frozen after P8 independent validation.**
+**#33 core morphology and production output are frozen after P8 independent validation. P6 advanced morphology is separately frozen after a source-grounded v2 audit.**
 
 P8 final verdict: **CONDITIONAL PASS / FROZEN WITH VALIDATION DEBT**.
 
@@ -71,6 +72,32 @@ Independent VALIDATION:
 - frozen detector state: `CUP_WITH_HANDLE_AMBIGUOUS` with `BELOW_CUP_MIDPOINT` retained as validation debt.
 
 The NFLX row had pivot/depth intentionally unscored before opening VALIDATION, so P8 does **not** claim every numeric CWH band has independent validation.
+
+## P6 advanced-pattern verdict
+
+P6 final verdict: **CONDITIONAL PASS / FROZEN WITH VALIDATION DEBT**.
+
+Frozen P6 v2 contracts:
+
+- `advanced-patterns-v2`;
+- `ascending-base-v2`.
+
+Key v2 changes:
+
+- removed the unsupported Ascending Base `0.05` pullback-dispersion state gate;
+- removed the unsupported Base-on-Base `0.50` / `0.75` close-fraction state gates;
+- Ascending Base uses published three-pullback/higher-high/higher-low morphology plus a source-grounded 6%–25% outer ambiguity guardrail, with 10%–20% retained as textbook evidence;
+- Base-on-Base recognizes the unambiguous entirely-above case, rejects a second base that never rises above the first-base high, and preserves partial overlap as `AMBIGUOUS` because “mostly above” has no universal published percentage threshold.
+
+Full repository regression after P6 v2: **227 tests passed** on workflow run `34746587586`.
+
+P6 has no independent labelled corpus comparable to P8, so advanced families remain outside production schema v2 and do not inherit P8's evidence level.
+
+See:
+
+- `docs/p6-source-audit-v2.md`
+- `docs/p6-advanced-patterns-contract-v2.md`
+- `docs/decisions/p6-final-verdict.md`
 
 ## Frozen production contract
 
@@ -108,7 +135,12 @@ Validated core families:
 - `CUP_WITHOUT_HANDLE`
 - `CUP_WITH_HANDLE`
 
-Later / secondary families such as `ASCENDING_BASE` and `BASE_ON_BASE` do not automatically inherit the same P8 evidence level.
+Separately frozen P6 advanced families:
+
+- `ASCENDING_BASE`
+- `BASE_ON_BASE`
+
+They do not automatically inherit the same P8 evidence level and are not emitted by frozen production v2.
 
 Downstream consumers must preserve explicit states such as:
 
@@ -129,6 +161,6 @@ If an extremum is economically located at one date but only confirmed later, pre
 
 ## Research rule
 
-The frozen P8 detector/evaluator semantics must not be revised from NFLX VALIDATION or from later trading performance.
+The frozen P8 detector/evaluator semantics must not be revised from NFLX VALIDATION or from later trading performance. P6 v2 must likewise not be tuned from trading outcomes or used as a route to reopen P3/P4/P5/P8.
 
-Any future research revision requires a new explicitly versioned research cycle and must not rewrite the frozen P8 verdict.
+Any future research revision requires a new explicitly versioned research cycle and must not rewrite the frozen P8 or P6 verdicts.
