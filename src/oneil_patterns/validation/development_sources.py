@@ -29,9 +29,11 @@ class R2TickerAmbiguous(RuntimeError):
 def _r2_client():
     missing = [name for name in R2_REQUIRED_ENV if not os.environ.get(name)]
     if missing:
-        # Configuration/auth absence is operational failure, not data absence.
-        # It must not silently permit fallback to a lower-priority provider.
-        raise RuntimeError(f"R2 configuration missing: {', '.join(missing)}")
+        # This process cannot access the preferred provider at all, so R2 is
+        # unavailable for this run and the frozen router may try Yahoo next.
+        # Supplied-but-invalid credentials remain terminal because boto/client
+        # failures below are deliberately not translated into SourceUnavailable.
+        raise SourceUnavailable(f"R2 provider not configured in this runtime: {', '.join(missing)}")
     return boto3.client(
         "s3",
         endpoint_url=os.environ["R2_ENDPOINT"],
@@ -107,8 +109,10 @@ def yahoo_provider(symbol: str, start: date, end: date) -> pd.DataFrame:
 def tiingo_provider(symbol: str, start: date, end: date) -> pd.DataFrame:
     token = os.environ.get("TIINGO_API_KEY")
     if not token:
-        # Missing auth is terminal under the frozen routing contract.
-        raise RuntimeError("TIINGO_API_KEY is not configured")
+        # This runtime cannot use Tiingo at all. Treat that as provider
+        # unavailability; a supplied-but-invalid token remains a terminal
+        # adapter/API error and is not masked by the router.
+        raise SourceUnavailable("Tiingo provider not configured in this runtime")
     try:
         return fetch_tiingo(symbol, start, end, token)
     except ValueError as exc:
