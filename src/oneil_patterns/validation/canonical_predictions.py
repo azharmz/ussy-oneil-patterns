@@ -23,6 +23,10 @@ from .open_right_edge_flat import (
     OPEN_RIGHT_EDGE_FLAT_VERSION,
     enumerate_open_right_edge_flats,
 )
+from .open_right_edge_handle import (
+    OPEN_RIGHT_EDGE_HANDLE_VERSION,
+    enumerate_open_right_edge_handles,
+)
 from .pivot_adapter import (
     cup_with_handle_pivot,
     cup_without_handle_pivot,
@@ -37,7 +41,7 @@ from .structural_assembly import (
     assemble_multiturn_segments,
 )
 
-PREDICTION_ADAPTER_VERSION = "p8-canonical-prediction-adapter-v0.4"
+PREDICTION_ADAPTER_VERSION = "p8-canonical-prediction-adapter-v0.5"
 
 
 def _session_index(frame: pd.DataFrame) -> dict[date, int]:
@@ -109,11 +113,10 @@ def _segment_key(segment) -> tuple:
 def extract_core_morphology_predictions(frame: pd.DataFrame, *, asof_date: date) -> list[MorphologyPrediction]:
     """Emit DEVELOPMENT predictions from the canonical landmark-first stack.
 
-    v0.4 preserves all confirmed first-pass and multi-turn structures and adds a
-    preregistered DEVELOPMENT-only open-right-edge Flat observation. The open
-    observation starts only from confirmed P1 SWING_HIGH landmarks and ends at
-    the explicit as-of horizon; it does not fabricate a P1 turn. P1 landmarks
-    and all morphology thresholds remain unchanged.
+    v0.5 preserves confirmed structures and adds explicit right-edge observation
+    semantics for Flat bases and incomplete handles. Observation horizons are
+    never fabricated P1 landmarks. P1 landmarks and morphology thresholds remain
+    unchanged.
     """
     if frame.empty:
         return []
@@ -159,8 +162,6 @@ def extract_core_morphology_predictions(frame: pd.DataFrame, *, asof_date: date)
             )
         )
 
-    # P8 experimental right-edge Flat observations. These are deliberately
-    # separate from confirmed P2 segments and retain explicit semantics in output.
     for observation in enumerate_open_right_edge_flats(ordered, landmarks, asof_date=asof_date):
         predictions.append(
             _prediction(
@@ -220,6 +221,30 @@ def extract_core_morphology_predictions(frame: pd.DataFrame, *, asof_date: date)
                     pivot_date=pivot.pivot_source_date,
                     detector_status=detector_status,
                     detector_faults=tuple(item.value for item in handle_assessment.faults),
+                )
+            )
+
+        for observation in enumerate_open_right_edge_handles(
+            ordered,
+            geometry,
+            landmarks,
+            asof_date=asof_date,
+        ):
+            detector_status = (
+                "CUP_WITH_HANDLE_RECOGNIZED"
+                if observation.state == HandleState.RECOGNIZED
+                else "CUP_WITH_HANDLE_AMBIGUOUS"
+            )
+            predictions.append(
+                _prediction(
+                    pattern="CUP_WITH_HANDLE",
+                    start=geometry.left_rim.price_date,
+                    end=observation.asof_date,
+                    pivot_level=float(geometry.right_rim.price),
+                    pivot_date=geometry.right_rim.price_date,
+                    detector_status=detector_status,
+                    detector_faults=tuple(item.value for item in observation.faults),
+                    candidate_semantics=f"OPEN_RIGHT_EDGE_HANDLE:{OPEN_RIGHT_EDGE_HANDLE_VERSION}",
                 )
             )
 
