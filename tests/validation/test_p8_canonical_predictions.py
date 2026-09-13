@@ -3,11 +3,14 @@ from datetime import date, timedelta
 import pandas as pd
 import pytest
 
+from oneil_patterns.landmarks.candidate import LandmarkCandidate
+from oneil_patterns.landmarks.model import LandmarkType
 from oneil_patterns.morphology.cup_body_detector import CupBodyState
 from oneil_patterns.morphology.cup_family import HandleState
 from oneil_patterns.validation.canonical_predictions import (
     _candidate_id,
     _cwh_status,
+    _db_right_edge_is_open,
     _prediction,
     _right_edge_context_complete,
     extract_core_morphology_predictions,
@@ -28,6 +31,11 @@ def _frame(days: int = 12) -> pd.DataFrame:
             "volume": [1_000_000 + i for i in range(days)],
         }
     )
+
+
+def _mark(kind, day):
+    d = date(2024, 1, 2) + timedelta(days=day)
+    return LandmarkCandidate(kind, 100.0, d, d, "fixture")
 
 
 def test_candidate_id_is_deterministic_and_semantic():
@@ -55,6 +63,15 @@ def test_ambiguous_cup_body_never_composes_to_recognized_cwh():
     assert _cwh_status(CupBodyState.AMBIGUOUS, HandleState.RECOGNIZED) == "CUP_WITH_HANDLE_AMBIGUOUS"
     assert _cwh_status(CupBodyState.AMBIGUOUS, HandleState.AMBIGUOUS) == "CUP_WITH_HANDLE_AMBIGUOUS"
     assert _cwh_status(CupBodyState.RECOGNIZED, HandleState.RECOGNIZED) == "CUP_WITH_HANDLE_RECOGNIZED"
+
+
+def test_db_right_edge_closes_after_any_later_confirmed_high():
+    trough_2 = date(2024, 1, 12)
+    earlier_high = _mark(LandmarkType.SWING_HIGH, 4)
+    assert _db_right_edge_is_open([earlier_high], trough_2_date=trough_2) is True
+
+    later_high = _mark(LandmarkType.SWING_HIGH, 14)
+    assert _db_right_edge_is_open([earlier_high, later_high], trough_2_date=trough_2) is False
 
 
 def test_cup_no_handle_context_requires_minimum_observed_sessions_after_rim():
