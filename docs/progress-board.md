@@ -20,7 +20,7 @@ Last updated: 2026-09-13
 | P6 Advanced patterns | FIRST-PASS ONLY | do not treat as having the same P8 evidence level as the four core families |
 | P7 Fault/ambiguity layer | COMPLETE | ambiguity/fault states persisted |
 | P8 Labelled morphology validation | COMPLETE — CONDITIONAL PASS | 20 DEVELOPMENT examples + one frozen NFLX VALIDATION execution |
-| P9 Productionization | COMPLETE | `production-v1`; downstream must preserve validation debt/ambiguity |
+| P9 Productionization | COMPLETE / FROZEN v2 | production directly consumes frozen P8 canonical predictions; no duplicate detector path |
 
 ## Frozen core stack
 
@@ -31,10 +31,15 @@ Last updated: 2026-09-13
 - pivot adapter: `p8-pivot-adapter-v0.2`
 - source evaluator: `p8-source-dimension-eval-v0.5`
 - candidate identity audit: `p8-candidate-identity-audit-v0.4`
+- production base identity: `core-base-id-v1`
+- production lineage: `core-lineage-v1`
+- production schema: `oneil-pattern-output-v2`
+- production engine: `33-core-p8-frozen-v1`
 - OHLCV priority: R2 -> Yahoo/yfinance -> Tiingo; fallback only on genuine unavailability
 
 Freeze record: `docs/decisions/p8-development-freeze-v1.md`.
 Final verdict: `docs/decisions/p8-final-verdict.md`.
+Production contract: `docs/production-output-contract-v2.md`.
 
 ## DEVELOPMENT evidence at freeze
 
@@ -113,11 +118,36 @@ What remains debt:
 
 No frozen morphology threshold may now be changed from the NFLX result.
 
-## Downstream contract
+## P9 production alignment
 
-A downstream #34 candidate generator may now consume the frozen four core pattern families, but it must preserve:
+The old first-pass production path was replaced because it still carried `P8_BLOCKED_ON_CORPUS` and v1 detector contracts. Production v2 now calls the exact canonical P8 prediction adapter rather than rebuilding landmarks/morphology independently.
+
+Frozen production output includes only the four P8-validated core families and persists:
+
+- canonical `candidate_id`;
+- stable exact-structure `base_id`;
+- conservative exact-anchor `lineage_id`;
+- `RECOGNIZED` / `AMBIGUOUS` / `REJECTED` status;
+- candidate semantics;
+- structural signature;
+- structural start/end;
+- pivot source date/level;
+- depth when available;
+- detector faults;
+- versioned P8 and production contracts.
+
+Lineage v1 uses exact anchors only—no fuzzy date/price tolerance—so it intentionally prefers under-merging to unstable lineage churn.
+
+Production alignment regression suite: **224 tests passed** on workflow run `34741587492`.
+
+## Downstream contract / stop boundary
+
+#33 core is now implementation-complete and frozen for the four validated families. The next work item is **#34 Theory-faithful Candidate Generator**, which belongs in the CAN SLIM parent workstream rather than further #33 morphology tuning.
+
+A downstream #34 consumer must preserve:
 
 - `RECOGNIZED` / `AMBIGUOUS` / `REJECTED` state;
+- `candidate_id`, `base_id`, and `lineage_id`;
 - candidate semantics;
 - detector faults;
 - source/validation provenance where applicable.
