@@ -8,19 +8,15 @@ import pandas as pd
 from oneil_patterns.landmarks.confirmed_window import extract_confirmed_window_landmarks
 from oneil_patterns.landmarks.excursion import extract_excursion_landmarks
 from oneil_patterns.landmarks.fusion import fuse_landmark_sources
-from oneil_patterns.landmarks.model import LandmarkType
 from oneil_patterns.morphology.cup_body import build_cup_body_geometry
 from oneil_patterns.morphology.cup_body_detector import CupBodyState, assess_cup_body
 from oneil_patterns.morphology.cup_family import (
     MIN_HANDLE_DURATION_SESSIONS,
     HandleState,
     assess_handle,
-    build_handle_geometry,
 )
-from oneil_patterns.morphology.double_bottom import build_double_bottom_geometry
 from oneil_patterns.morphology.double_bottom_detector import assess_double_bottom
 from oneil_patterns.morphology.flat_base import assess_flat_base
-from oneil_patterns.segmentation.segmenter import segment_base_candidates
 
 from .pivot_adapter import (
     cup_with_handle_pivot,
@@ -29,8 +25,14 @@ from .pivot_adapter import (
     flat_base_pivot,
 )
 from .source_dimension_eval import MorphologyPrediction
+from .structural_assembly import (
+    STRUCTURAL_ASSEMBLY_VERSION,
+    assemble_handle_geometries,
+    assemble_multiturn_double_bottoms,
+    assemble_multiturn_segments,
+)
 
-PREDICTION_ADAPTER_VERSION = "p8-canonical-prediction-adapter-v0.2"
+PREDICTION_ADAPTER_VERSION = "p8-canonical-prediction-adapter-v0.3"
 
 
 def _session_index(frame: pd.DataFrame) -> dict[date, int]:
@@ -42,6 +44,7 @@ def _candidate_id(pattern: str, start: date, end: date | None, pivot_date: date 
     payload = "|".join(
         [
             PREDICTION_ADAPTER_VERSION,
+            STRUCTURAL_ASSEMBLY_VERSION,
             pattern,
             start.isoformat(),
             end.isoformat() if end else "",
@@ -81,10 +84,11 @@ def _right_edge_context_complete(index: dict[date, int], *, right_rim: date, aso
 
 
 def extract_core_morphology_predictions(frame: pd.DataFrame, *, asof_date: date) -> list[MorphologyPrediction]:
-    """Emit P8 predictions from the canonical frozen oneil landmark-first stack.
+    """Emit DEVELOPMENT predictions from the canonical landmark-first stack.
 
-    Fault codes are retained as diagnostic evidence but do not change candidate
-    ranking or source-dimension evaluation.
+    v0.3 changes structural assembly only: P1 landmarks and all existing
+    morphology thresholds remain unchanged. Multiple structural scales and
+    Cup-family interpretations may coexist explicitly.
     """
     if frame.empty:
         return []
@@ -108,7 +112,12 @@ def extract_core_morphology_predictions(frame: pd.DataFrame, *, asof_date: date)
 
     predictions: list[MorphologyPrediction] = []
 
-    for segment in segment_base_candidates(ordered, landmarks, asof_date=asof_date):
+    # Multi-turn morphology-neutral spans are a superset of the first-pass
+    # atomic high-low-high segmentation. Intervening minor P1 turns are allowed.
+    segments = assemble_multiturn_segments(ordered, landmarks, asof_date=asof_date)
+
+    # Flat Base assessment: unchanged thresholds over revised structural spans.
+    for segment in segments:
         assessment = assess_flat_base(ordered, segment)
         pivot = flat_base_pivot(segment)
         predictions.append(
@@ -123,23 +132,9 @@ def extract_core_morphology_predictions(frame: pd.DataFrame, *, asof_date: date)
             )
         )
 
-    for i in range(len(landmarks) - 4):
-        marks = landmarks[i : i + 5]
-        expected = [
-            LandmarkType.SWING_HIGH,
-            LandmarkType.SWING_LOW,
-            LandmarkType.SWING_HIGH,
-            LandmarkType.SWING_LOW,
-            LandmarkType.SWING_HIGH,
-        ]
-        if [mark.type for mark in marks] != expected:
-            continue
-        try:
-            geometry = build_double_bottom_geometry(index, *marks)
-        except ValueError as exc:
-            if "trough cannot exceed left high" in str(exc):
-                continue
-            raise
+    # Double Bottom assessment: unchanged geometry/threshold semantics over
+    # non-consecutive structural W candidates.
+    for geometry in assemble_multiturn_double_bottoms(ordered, landmarks, asof_date=asof_date):
         assessment = assess_double_bottom(geometry)
         pivot = double_bottom_pivot(geometry)
         predictions.append(
@@ -154,29 +149,24 @@ def extract_core_morphology_predictions(frame: pd.DataFrame, *, asof_date: date)
             )
         )
 
-    for i in range(len(landmarks) - 2):
-        body_marks = landmarks[i : i + 3]
-        if [mark.type for mark in body_marks] != [
-            LandmarkType.SWING_HIGH,
-            LandmarkType.SWING_LOW,
-            LandmarkType.SWING_HIGH,
-        ]:
+    # Cup family is evaluated from the same multi-turn high-low-high spans.
+    for segment in segments:
+        if segment.recovery is None:
             continue
-
-        geometry = build_cup_body_geometry(ordered, *body_marks)
+        geometry = build_cup_body_geometry(ordered, segment.start, segment.trough, segment.recovery)
         body = assess_cup_body(geometry)
         if body.state != CupBodyState.RECOGNIZED:
             continue
 
-        handle_geometry = None
-        handle_assessment = None
-        if i + 4 < len(landmarks):
-            handle_marks = landmarks[i + 3 : i + 5]
-            if [mark.type for mark in handle_marks] == [LandmarkType.SWING_LOW, LandmarkType.SWING_HIGH]:
-                handle_geometry = build_handle_geometry(geometry, index, *handle_marks)
-                handle_assessment = assess_handle(handle_geometry)
-
-        if handle_geometry is not None and handle_assessment is not None:
+        # Preserve every post-rim handle attempt independently. No handle
+        # interpretation suppresses Cup-without-Handle; overlap remains explicit.
+        for handle_geometry in assemble_handle_geometries(
+            ordered,
+            geometry,
+            landmarks,
+            asof_date=asof_date,
+        ):
+            handle_assessment = assess_handle(handle_geometry)
             pivot = cup_with_handle_pivot(geometry, handle_geometry)
             detector_status = (
                 "CUP_WITH_HANDLE_RECOGNIZED"
@@ -194,7 +184,6 @@ def extract_core_morphology_predictions(frame: pd.DataFrame, *, asof_date: date)
                     detector_faults=tuple(item.value for item in handle_assessment.faults),
                 )
             )
-            continue
 
         if _right_edge_context_complete(index, right_rim=geometry.right_rim.price_date, asof_date=asof_date):
             pivot = cup_without_handle_pivot(geometry)
