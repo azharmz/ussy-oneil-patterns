@@ -23,7 +23,7 @@ def normalize_double_bottom(assessment: DoubleBottomAssessment) -> PatternAssess
         pattern="DOUBLE_BOTTOM",
         native_state=assessment.state,
         native_faults=assessment.faults,
-        contract_version="double-bottom-v2",
+        contract_version="double-bottom-v3",
     )
 
 
