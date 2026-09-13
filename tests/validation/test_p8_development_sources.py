@@ -21,10 +21,10 @@ def _frame():
     )
 
 
-def test_missing_r2_configuration_is_terminal_not_source_unavailable(monkeypatch):
+def test_missing_r2_configuration_is_source_unavailable(monkeypatch):
     for name in ("R2_ENDPOINT", "R2_ACCESS_KEY_ID", "R2_SECRET_ACCESS_KEY", "R2_BUCKET_NAME"):
         monkeypatch.delenv(name, raising=False)
-    with pytest.raises(RuntimeError, match="R2 configuration missing"):
+    with pytest.raises(SourceUnavailable, match="R2 provider not configured"):
         _r2_client()
 
 
