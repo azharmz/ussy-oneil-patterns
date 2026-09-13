@@ -55,6 +55,55 @@ def test_month_precision_partial_boundary_matches_without_inventing_end():
     assert result.matched_detector_status == "AMBIGUOUS"
     assert result.end_error_days is None
     assert result.pivot_price_error_pct == 0.0
+    assert result.candidate_resolution_state == "UNIQUE"
+    assert result.source_equivalent_candidate_count == 1
+
+
+def test_source_equivalent_candidates_are_reported_without_detector_status_ranking():
+    label = _label(
+        pattern="DOUBLE_BOTTOM",
+        window_start=date(2024, 7, 1),
+        window_start_precision=SourcePrecision.MONTH,
+        expected_pivot_level=12.74,
+    )
+    confirmed = MorphologyPrediction(
+        candidate_id="a-confirmed",
+        pattern="DOUBLE_BOTTOM",
+        start_date=date(2024, 7, 30),
+        end_date=date(2024, 9, 12),
+        pivot_source_date=date(2024, 8, 30),
+        pivot_level=12.74,
+        detector_status="DOUBLE_BOTTOM_REJECTED",
+        candidate_semantics="CONFIRMED_STRUCTURE",
+    )
+    right_edge = MorphologyPrediction(
+        candidate_id="b-right-edge",
+        pattern="DOUBLE_BOTTOM",
+        start_date=date(2024, 7, 30),
+        end_date=date(2024, 9, 20),
+        pivot_source_date=date(2024, 8, 30),
+        pivot_level=12.74,
+        detector_status="DOUBLE_BOTTOM_RECOGNIZED",
+        candidate_semantics="OPEN_RIGHT_EDGE_DOUBLE_BOTTOM:test",
+    )
+
+    result = evaluate_positive_development_label(label, [right_edge, confirmed])
+
+    assert result.agreement_state == "MATCH"
+    assert result.candidate_resolution_state == "SOURCE_EQUIVALENT_MULTIPLE"
+    assert result.source_equivalent_candidate_count == 2
+    assert result.source_equivalent_detector_statuses == (
+        "DOUBLE_BOTTOM_RECOGNIZED",
+        "DOUBLE_BOTTOM_REJECTED",
+    )
+    assert result.source_equivalent_candidate_semantics == (
+        "CONFIRMED_STRUCTURE",
+        "OPEN_RIGHT_EDGE_DOUBLE_BOTTOM:test",
+    )
+    # Deterministic presentation can choose one, but detector status never enters
+    # source ranking and the disagreement remains visible in the result.
+    assert any("presentation-only" in item for item in result.rationale)
+    assert any("disagree on detector state" in item for item in result.rationale)
 
 
 def test_source_window_end_is_not_assumed_to_be_structural_end():
@@ -62,9 +111,6 @@ def test_source_window_end_is_not_assumed_to_be_structural_end():
         pattern="FLAT_BASE",
         window_start=date(2023, 4, 4),
         window_start_precision=SourcePrecision.DAY,
-        # This source-window endpoint may be a breakout date; the current corpus
-        # does not yet carry a semantic role that makes it comparable to a P2
-        # structural end.
         window_end=date(2023, 5, 18),
         asof_date=date(2023, 5, 18),
         expected_pivot_source_date=date(2023, 4, 4),
@@ -147,3 +193,4 @@ def test_wrong_pattern_is_miss_pattern_not_boundary_failure():
 
     assert result.agreement_state == "MISS_PATTERN"
     assert result.matched_candidate_id is None
+    assert result.candidate_resolution_state == "NONE"
