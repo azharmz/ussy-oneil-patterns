@@ -4,9 +4,9 @@ import pandas as pd
 import pytest
 
 from oneil_patterns.data.r2_ready import ReadyDataset
-from oneil_patterns.morphology.faults import normalize_assessment
 from oneil_patterns.production.output import ProductionAssessmentRecord
 from oneil_patterns.production.runner import run_ready_dataset
+from oneil_patterns.validation.source_dimension_eval import MorphologyPrediction
 
 
 def _dataset(*, future=False):
@@ -22,17 +22,23 @@ def _dataset(*, future=False):
 
 def _analyzer(security_id, ticker, frame, asof_date):
     assert frame["date"].is_monotonic_increasing
-    envelope = normalize_assessment(
+    prediction = MorphologyPrediction(
+        candidate_id=f"candidate-{security_id}",
         pattern="FLAT_BASE",
-        native_state="FLAT_BASE_RECOGNIZED",
-        native_faults=(),
-        contract_version="flat-base-v1",
+        start_date=asof_date,
+        end_date=asof_date,
+        pivot_source_date=asof_date,
+        pivot_level=2.0,
+        depth_pct=0.1,
+        detector_status="FLAT_BASE_RECOGNIZED",
+        candidate_semantics="CONFIRMED_STRUCTURE",
+        structural_signature=(f"LEFT_HIGH:{asof_date.isoformat()}", f"BASE_LOW:{asof_date.isoformat()}"),
     )
-    yield ProductionAssessmentRecord.from_envelope(
+    yield ProductionAssessmentRecord.from_prediction(
         security_id=security_id,
         ticker=ticker,
         asof_date=asof_date,
-        envelope=envelope,
+        prediction=prediction,
     )
 
 
@@ -40,7 +46,7 @@ def test_batch_runner_orders_securities_and_serialization_deterministically():
     result = run_ready_dataset(_dataset(), asof_date=date(2026, 9, 12), analyze_security=_analyzer)
     assert len(result.records) == 2
     assert result.manifest.record_count == 2
-    assert result.manifest.labelled_validation_status == "P8_BLOCKED_ON_CORPUS"
+    assert result.manifest.labelled_validation_status == "P8_CONDITIONAL_PASS_FROZEN"
     assert result.jsonl.count("\n") == 2
     assert result.records == tuple(sorted(result.records, key=lambda r: r.assessment_id))
 
