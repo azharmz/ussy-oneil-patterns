@@ -19,6 +19,10 @@ from oneil_patterns.morphology.double_bottom_detector import assess_double_botto
 from oneil_patterns.morphology.flat_base import assess_flat_base
 from oneil_patterns.segmentation.segmenter import segment_base_candidates
 
+from .open_right_edge_cnh import (
+    OPEN_RIGHT_EDGE_CNH_VERSION,
+    enumerate_open_right_edge_cnh,
+)
 from .open_right_edge_flat import (
     OPEN_RIGHT_EDGE_FLAT_VERSION,
     enumerate_open_right_edge_flats,
@@ -41,7 +45,7 @@ from .structural_assembly import (
     assemble_multiturn_segments,
 )
 
-PREDICTION_ADAPTER_VERSION = "p8-canonical-prediction-adapter-v0.5"
+PREDICTION_ADAPTER_VERSION = "p8-canonical-prediction-adapter-v0.6"
 
 
 def _session_index(frame: pd.DataFrame) -> dict[date, int]:
@@ -95,7 +99,7 @@ def _prediction(
 
 
 def _right_edge_context_complete(index: dict[date, int], *, right_rim: date, asof_date: date) -> bool:
-    """Preregistered daily-data context gate for Cup-without-Handle."""
+    """Preregistered daily-data context gate for completed Cup-without-Handle."""
     if right_rim not in index or asof_date not in index:
         return False
     return index[asof_date] - index[right_rim] >= MIN_HANDLE_DURATION_SESSIONS - 1
@@ -113,10 +117,9 @@ def _segment_key(segment) -> tuple:
 def extract_core_morphology_predictions(frame: pd.DataFrame, *, asof_date: date) -> list[MorphologyPrediction]:
     """Emit DEVELOPMENT predictions from the canonical landmark-first stack.
 
-    v0.5 preserves confirmed structures and adds explicit right-edge observation
-    semantics for Flat bases and incomplete handles. Observation horizons are
-    never fabricated P1 landmarks. P1 landmarks and morphology thresholds remain
-    unchanged.
+    v0.6 preserves confirmed structures and adds explicit right-edge observation
+    semantics for Flat bases, incomplete handles and Cup-without-Handle bodies.
+    Observation horizons/recovery highs are never fabricated P1 landmarks.
     """
     if frame.empty:
         return []
@@ -188,6 +191,31 @@ def extract_core_morphology_predictions(frame: pd.DataFrame, *, asof_date: date)
                 pivot_date=pivot.pivot_source_date,
                 detector_status=assessment.state.value,
                 detector_faults=tuple(item.value for item in assessment.faults),
+            )
+        )
+
+    # Explicit right-edge Cup-no-Handle observations. Start and trough are
+    # confirmed P1 landmarks; observed recovery through T is evidence only.
+    for observation in enumerate_open_right_edge_cnh(ordered, landmarks, asof_date=asof_date):
+        suffix = {
+            CupBodyState.RECOGNIZED: "RECOGNIZED",
+            CupBodyState.AMBIGUOUS: "AMBIGUOUS",
+            CupBodyState.REJECTED: "REJECTED",
+        }[observation.state]
+        semantics = (
+            f"OPEN_RIGHT_EDGE_CNH:{OPEN_RIGHT_EDGE_CNH_VERSION}:"
+            f"TROUGH={observation.trough.price_date.isoformat()}"
+        )
+        predictions.append(
+            _prediction(
+                pattern="CUP_WITHOUT_HANDLE",
+                start=observation.left_rim.price_date,
+                end=observation.asof_date,
+                pivot_level=float(observation.left_rim.price),
+                pivot_date=observation.left_rim.price_date,
+                detector_status=f"CUP_WITHOUT_HANDLE_{suffix}",
+                detector_faults=tuple(item.value for item in observation.faults),
+                candidate_semantics=semantics,
             )
         )
 
