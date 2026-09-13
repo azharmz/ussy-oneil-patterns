@@ -23,8 +23,11 @@ def test_flat_base_fixture_policy(fixture):
         assert result.state == FlatBaseState.REJECTED
         assert FlatBaseFault.TOO_DEEP in result.faults
     elif fixture.name == "wide_loose":
+        # P8 v0.2: the synthetic fixture still proves the research-only fault
+        # is detected, but the fault no longer creates a hard rejection when
+        # theory duration/depth gates pass.
         assert fixture.label == FlatBaseFixtureLabel.NEGATIVE
-        assert result.state == FlatBaseState.REJECTED
+        assert result.state == FlatBaseState.AMBIGUOUS
         assert FlatBaseFault.WIDE_LOOSE in result.faults
     elif fixture.name == "borderline_tightness":
         assert fixture.label == FlatBaseFixtureLabel.AMBIGUOUS
