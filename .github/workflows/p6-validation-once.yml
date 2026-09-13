@@ -1,0 +1,24 @@
+name: p6-validation-once
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  frozen-validation:
+    if: ${{ contains(github.event.head_commit.message, '[p6-validation-once]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - run: python -m pip install -e ".[validation]"
+      - run: python scripts/run_p6_validation_once.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: p6-frozen-validation
+          path: results/p6-frozen-validation.json
+          if-no-files-found: error
