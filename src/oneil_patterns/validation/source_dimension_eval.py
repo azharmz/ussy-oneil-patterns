@@ -6,7 +6,7 @@ from typing import Iterable
 
 from .labels import CorpusSplit, LabelEvidence, LabelValue, SourcePrecision
 
-EVALUATOR_VERSION = "p8-source-dimension-eval-v0.4"
+EVALUATOR_VERSION = "p8-source-dimension-eval-v0.5"
 
 
 @dataclass(frozen=True, slots=True)
@@ -38,6 +38,10 @@ class SourceDimensionAgreement:
     boundary_validation_state: str
     pivot_validation_state: str
     depth_validation_state: str
+    candidate_resolution_state: str
+    source_equivalent_candidate_count: int
+    source_equivalent_detector_statuses: tuple[str, ...]
+    source_equivalent_candidate_semantics: tuple[str, ...]
     rationale: tuple[str, ...]
     evaluator_version: str = EVALUATOR_VERSION
 
@@ -105,7 +109,7 @@ def evaluate_positive_development_label(
     if label.split != CorpusSplit.DEVELOPMENT:
         raise ValueError("source-dimension evaluator is locked to DEVELOPMENT labels")
     if label.label != LabelValue.POSITIVE:
-        raise ValueError("v0.4 evaluates positive authoritative labels only")
+        raise ValueError("v0.5 evaluates positive authoritative labels only")
     if boundary_tolerance_days < 0 or pivot_date_tolerance_days < 0 or pivot_price_tolerance_pct < 0:
         raise ValueError("tolerances must be non-negative")
 
@@ -125,10 +129,14 @@ def evaluate_positive_development_label(
             boundary_validation_state=_boundary_validation_state(label),
             pivot_validation_state="NOT_EVALUABLE",
             depth_validation_state="NOT_EVALUABLE" if label.expected_depth_pct is not None else "SOURCE_NOT_PROVIDED",
+            candidate_resolution_state="NONE",
+            source_equivalent_candidate_count=0,
+            source_equivalent_detector_statuses=(),
+            source_equivalent_candidate_semantics=(),
             rationale=("frozen detector emitted no candidate with the authoritative pattern label",),
         )
 
-    ranked: list[tuple[tuple, MorphologyPrediction, tuple]] = []
+    ranked: list[tuple[tuple, tuple, MorphologyPrediction, tuple]] = []
     for prediction in same_pattern:
         start_ok, start_error = _start_match(label, prediction, boundary_tolerance_days)
         end_error = None
@@ -165,7 +173,11 @@ def evaluate_positive_development_label(
         boundary_ok = start_ok and end_ok
         pivot_ok = pivot_date_ok and pivot_price_ok
         morphology_ok = depth_ok
-        rank = (
+
+        # This tuple contains only dimensions supplied by the authoritative
+        # source (plus their explicit tolerances). Detector state, candidate
+        # semantics and unscored structural end dates are intentionally absent.
+        source_rank = (
             0 if boundary_ok else 1,
             0 if pivot_ok else 1,
             0 if morphology_ok else 1,
@@ -173,13 +185,34 @@ def evaluate_positive_development_label(
             depth_error if depth_error is not None else float("inf"),
             pivot_date_error if pivot_date_error is not None else 10**9,
             pivot_price_error if pivot_price_error is not None else float("inf"),
+        )
+        deterministic_rank = source_rank + (
             prediction.start_date,
             prediction.end_date or date.max,
             prediction.candidate_id,
         )
-        ranked.append((rank, prediction, (start_ok, start_error, end_ok, end_error, pivot_date_ok, pivot_date_error, pivot_price_ok, pivot_price_error, depth_ok, depth_error)))
+        details = (
+            start_ok,
+            start_error,
+            end_ok,
+            end_error,
+            pivot_date_ok,
+            pivot_date_error,
+            pivot_price_ok,
+            pivot_price_error,
+            depth_ok,
+            depth_error,
+        )
+        ranked.append((source_rank, deterministic_rank, prediction, details))
 
-    _, chosen, details = min(ranked, key=lambda item: item[0])
+    best_source_rank = min(item[0] for item in ranked)
+    equivalent = [item for item in ranked if item[0] == best_source_rank]
+    _, _, chosen, details = min(equivalent, key=lambda item: item[1])
+
+    equivalent_statuses = tuple(sorted({item[2].detector_status or "NONE" for item in equivalent}))
+    equivalent_semantics = tuple(sorted({item[2].candidate_semantics for item in equivalent}))
+    resolution_state = "UNIQUE" if len(equivalent) == 1 else "SOURCE_EQUIVALENT_MULTIPLE"
+
     start_ok, start_error, end_ok, end_error, pivot_date_ok, pivot_date_error, pivot_price_ok, pivot_price_error, depth_ok, depth_error = details
     boundary_ok = start_ok and end_ok
     pivot_ok = pivot_date_ok and pivot_price_ok
@@ -197,6 +230,19 @@ def evaluate_positive_development_label(
     else:
         state = "MATCH"
         rationale.append("named pattern agrees with all currently comparable source-provided dimensions at their published precision")
+
+    if len(equivalent) > 1:
+        rationale.append(
+            f"{len(equivalent)} candidates are source-equivalent; deterministic selection is presentation-only and does not use detector state"
+        )
+        if len(equivalent_statuses) > 1:
+            rationale.append(
+                "source-equivalent candidates disagree on detector state; this ambiguity is retained explicitly rather than resolved from outcomes"
+            )
+        if len(equivalent_semantics) > 1:
+            rationale.append(
+                "source-equivalent candidates span multiple candidate semantics; candidate-class ambiguity remains explicit"
+            )
 
     if label.window_start is None:
         rationale.append("source does not provide a detector-comparable start anchor; start is not scored or used for ranking")
@@ -240,5 +286,9 @@ def evaluate_positive_development_label(
         boundary_validation_state=_boundary_validation_state(label),
         pivot_validation_state=_pivot_validation_state(label, chosen),
         depth_validation_state=_depth_validation_state(label, chosen),
+        candidate_resolution_state=resolution_state,
+        source_equivalent_candidate_count=len(equivalent),
+        source_equivalent_detector_statuses=equivalent_statuses,
+        source_equivalent_candidate_semantics=equivalent_semantics,
         rationale=tuple(rationale),
     )
