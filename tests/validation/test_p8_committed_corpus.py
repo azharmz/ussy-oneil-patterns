@@ -34,6 +34,11 @@ def test_source_precision_and_partial_dimensions_are_preserved():
     assert labels["FOUR"].expected_pivot_source_date is None
     assert labels["FOUR"].expected_pivot_level == 84.26
 
+    assert labels["AMZN"].window_start_precision == SourcePrecision.MONTH
+    assert labels["AMZN"].expected_pivot_level == 145.86
+    assert labels["AMZN"].expected_depth_pct == 0.19
+    assert labels["AMZN"].expected_depth_tolerance_pct_points == 0.02
+
     assert labels["TW"].window_start_precision == SourcePrecision.DAY
     assert labels["TW"].window_start.isoformat() == "2024-10-15"
     assert labels["TW"].window_end is None
