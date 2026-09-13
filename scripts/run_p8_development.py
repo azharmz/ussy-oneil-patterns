@@ -8,6 +8,10 @@ from datetime import timedelta
 import json
 from pathlib import Path
 
+from oneil_patterns.validation.candidate_identity import (
+    CANDIDATE_IDENTITY_AUDIT_VERSION,
+    audit_candidate_identities,
+)
 from oneil_patterns.validation.canonical_predictions import (
     PREDICTION_ADAPTER_VERSION,
     extract_core_morphology_predictions,
@@ -59,8 +63,10 @@ def _run_one(label, args) -> dict:
         pivot_price_tolerance_pct=args.pivot_price_tolerance_pct,
     )
     same_pattern = [item for item in predictions if item.pattern == label.pattern]
+    identity_audit = audit_candidate_identities(same_pattern)
     pattern_counts = dict(sorted(Counter(item.pattern for item in predictions).items()))
     cup_body_state_counts = dict(sorted(Counter(item["state"] for item in cup_body_diagnostics).items()))
+    identity_state_counts = dict(sorted(Counter(item.identity_state for item in identity_audit).items()))
     return {
         "example_id": label.example_id,
         "symbol": label.symbol,
@@ -77,6 +83,10 @@ def _run_one(label, args) -> dict:
         "agreement": agreement.to_dict(),
         "same_pattern_predictions": [asdict(item) for item in same_pattern],
         "all_predictions": [asdict(item) for item in predictions],
+        "candidate_identity_audit_version": CANDIDATE_IDENTITY_AUDIT_VERSION,
+        "candidate_identity_count": len(identity_audit),
+        "candidate_identity_state_counts": identity_state_counts,
+        "candidate_identities": [item.to_dict() for item in identity_audit],
         "cup_body_diagnostic_version": CUP_BODY_DIAGNOSTIC_VERSION,
         "cup_body_diagnostic_count": len(cup_body_diagnostics),
         "cup_body_state_counts": cup_body_state_counts,
@@ -107,6 +117,18 @@ def main() -> int:
     detector_status_counts = dict(
         sorted(Counter(item["agreement"].get("matched_detector_status") or "NO_MATCH" for item in results).items())
     )
+    candidate_resolution_counts = dict(
+        sorted(Counter(item["agreement"]["candidate_resolution_state"] for item in results).items())
+    )
+    identity_state_counts = dict(
+        sorted(
+            Counter(
+                identity["identity_state"]
+                for item in results
+                for identity in item["candidate_identities"]
+            ).items()
+        )
+    )
     joint_counts = dict(
         sorted(
             Counter(
@@ -122,6 +144,7 @@ def main() -> int:
         "prediction_adapter_version": PREDICTION_ADAPTER_VERSION,
         "pivot_adapter_version": PIVOT_ADAPTER_VERSION,
         "evaluator_version": EVALUATOR_VERSION,
+        "candidate_identity_audit_version": CANDIDATE_IDENTITY_AUDIT_VERSION,
         "cup_body_diagnostic_version": CUP_BODY_DIAGNOSTIC_VERSION,
         "structural_diagnostic_version": STRUCTURAL_DIAGNOSTIC_VERSION,
         "context_calendar_days": args.context_calendar_days,
@@ -130,6 +153,8 @@ def main() -> int:
         "pivot_price_tolerance_pct": args.pivot_price_tolerance_pct,
         "result_count": len(results),
         "agreement_counts": agreement_counts,
+        "candidate_resolution_counts": candidate_resolution_counts,
+        "candidate_identity_state_counts": identity_state_counts,
         "matched_detector_status_counts": detector_status_counts,
         "agreement_by_detector_status": joint_counts,
         "results": results,
@@ -141,6 +166,8 @@ def main() -> int:
             "When source start is absent, context lookback is fixed from asof_date and start is not scored.",
             "Corporate-action factors alter comparison basis only; source prices stay immutable.",
             "Detector status/faults and diagnostic ledgers are evidence separate from source-dimension agreement.",
+            "Source-equivalent candidate multiplicity is explicit; detector status never ranks source agreement.",
+            "Candidate identity audit excludes rolling/right-edge end horizon and candidate semantics from its coarse structural key.",
             "P1/P2 structural diagnostics use canonical label-agnostic landmark/segment construction only.",
             "No return, CAGR, PF, FWD1, breakout-performance, or entry-optimization input is used.",
         ],
