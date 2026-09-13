@@ -38,19 +38,26 @@ class DoubleBottomAssessment:
 
 
 def assess_double_bottom(geometry: DoubleBottomGeometry) -> DoubleBottomAssessment:
+    """Assess W morphology under P8 v0.2 undercut semantics.
+
+    Duration/depth remain hard gates. A missing second-trough undercut is retained
+    as explicit morphology evidence but maps to AMBIGUOUS rather than hard reject;
+    IBD describes the second bottom as *usually* lower, and P8 contains an
+    authoritative named Double Bottom whose source-aligned pivot lacks undercut.
+    """
     faults: list[DoubleBottomFault] = []
 
     if geometry.duration_sessions < MIN_DURATION_SESSIONS:
         faults.append(DoubleBottomFault.TOO_SHORT)
     if geometry.overall_depth_pct > MAX_DEPTH_PCT:
         faults.append(DoubleBottomFault.TOO_DEEP)
-    if geometry.trough2_vs_trough1_pct >= 0:
+    no_undercut = geometry.trough2_vs_trough1_pct >= 0
+    if no_undercut:
         faults.append(DoubleBottomFault.NO_SECOND_TROUGH_UNDERCUT)
 
     hard_faults = {
         DoubleBottomFault.TOO_SHORT,
         DoubleBottomFault.TOO_DEEP,
-        DoubleBottomFault.NO_SECOND_TROUGH_UNDERCUT,
     }
     if any(f in hard_faults for f in faults):
         return DoubleBottomAssessment(
@@ -61,16 +68,17 @@ def assess_double_bottom(geometry: DoubleBottomGeometry) -> DoubleBottomAssessme
             research_bands_pass=False,
         )
 
-    if abs(geometry.trough2_vs_trough1_pct) < MIN_CLEAR_UNDERCUT_PCT:
+    if not no_undercut and abs(geometry.trough2_vs_trough1_pct) < MIN_CLEAR_UNDERCUT_PCT:
         faults.append(DoubleBottomFault.SHALLOW_UNDERCUT)
     if geometry.middle_peak_recovered_fraction < MIN_CLEAR_MIDDLE_RECOVERED_FRACTION:
         faults.append(DoubleBottomFault.WEAK_MIDDLE_REBOUND)
 
-    research_faults = {
+    ambiguity_faults = {
+        DoubleBottomFault.NO_SECOND_TROUGH_UNDERCUT,
         DoubleBottomFault.SHALLOW_UNDERCUT,
         DoubleBottomFault.WEAK_MIDDLE_REBOUND,
     }
-    if any(f in research_faults for f in faults):
+    if any(f in ambiguity_faults for f in faults):
         state = DoubleBottomState.AMBIGUOUS
         research_pass = False
     else:
