@@ -6,13 +6,14 @@ from typing import Iterable
 
 from .source_dimension_eval import MorphologyPrediction
 
-CANDIDATE_IDENTITY_AUDIT_VERSION = "p8-candidate-identity-audit-v0.1"
+CANDIDATE_IDENTITY_AUDIT_VERSION = "p8-candidate-identity-audit-v0.2"
 
 
 @dataclass(frozen=True, slots=True)
 class CandidateIdentityAudit:
     identity_id: str
     pattern: str
+    structural_signature: tuple[str, ...]
     start_date: str
     pivot_source_date: str | None
     pivot_level: float | None
@@ -34,19 +35,22 @@ def _rounded(value: float | None, digits: int) -> str:
 
 
 def structural_identity_signature(prediction: MorphologyPrediction) -> tuple[str, ...]:
-    """Return a source-independent coarse structural identity.
+    """Return a source-independent structural identity key.
 
-    Rolling/right-edge observation horizons and candidate semantics are excluded
-    deliberately. The identity is anchored by pattern, structural start, pivot
-    anchor and measured depth. This is a P8 audit key, not yet a production
-    BaseIdentity contract.
+    Canonical predictions should provide pattern-specific landmark signatures.
+    Rolling/right-edge horizons and candidate semantics are deliberately absent
+    so an open observation can mature without changing identity. The fallback is
+    retained only for regression/backward compatibility and is not the desired
+    production path.
     """
+    if prediction.structural_signature:
+        return (prediction.pattern, *prediction.structural_signature)
     return (
         prediction.pattern,
-        prediction.start_date.isoformat(),
-        prediction.pivot_source_date.isoformat() if prediction.pivot_source_date else "",
-        _rounded(prediction.pivot_level, 6),
-        _rounded(prediction.depth_pct, 6),
+        f"START:{prediction.start_date.isoformat()}",
+        f"PIVOT_DATE:{prediction.pivot_source_date.isoformat() if prediction.pivot_source_date else ''}",
+        f"PIVOT:{_rounded(prediction.pivot_level, 6)}",
+        f"DEPTH:{_rounded(prediction.depth_pct, 6)}",
     )
 
 
@@ -76,6 +80,7 @@ def audit_candidate_identities(predictions: Iterable[MorphologyPrediction]) -> l
             CandidateIdentityAudit(
                 identity_id=_stable_identity_id(signature),
                 pattern=first.pattern,
+                structural_signature=signature[1:],
                 start_date=first.start_date.isoformat(),
                 pivot_source_date=first.pivot_source_date.isoformat() if first.pivot_source_date else None,
                 pivot_level=round(float(first.pivot_level), 8) if first.pivot_level is not None else None,
