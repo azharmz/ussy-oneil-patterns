@@ -19,6 +19,10 @@ from oneil_patterns.morphology.double_bottom_detector import assess_double_botto
 from oneil_patterns.morphology.flat_base import assess_flat_base
 from oneil_patterns.segmentation.segmenter import segment_base_candidates
 
+from .open_right_edge_flat import (
+    OPEN_RIGHT_EDGE_FLAT_VERSION,
+    enumerate_open_right_edge_flats,
+)
 from .pivot_adapter import (
     cup_with_handle_pivot,
     cup_without_handle_pivot,
@@ -33,7 +37,7 @@ from .structural_assembly import (
     assemble_multiturn_segments,
 )
 
-PREDICTION_ADAPTER_VERSION = "p8-canonical-prediction-adapter-v0.3.1"
+PREDICTION_ADAPTER_VERSION = "p8-canonical-prediction-adapter-v0.4"
 
 
 def _session_index(frame: pd.DataFrame) -> dict[date, int]:
@@ -41,12 +45,19 @@ def _session_index(frame: pd.DataFrame) -> dict[date, int]:
     return {d: i for i, d in enumerate(dates)}
 
 
-def _candidate_id(pattern: str, start: date, end: date | None, pivot_date: date | None) -> str:
+def _candidate_id(
+    pattern: str,
+    start: date,
+    end: date | None,
+    pivot_date: date | None,
+    candidate_semantics: str,
+) -> str:
     payload = "|".join(
         [
             PREDICTION_ADAPTER_VERSION,
             STRUCTURAL_ASSEMBLY_VERSION,
             pattern,
+            candidate_semantics,
             start.isoformat(),
             end.isoformat() if end else "",
             pivot_date.isoformat() if pivot_date else "",
@@ -64,9 +75,10 @@ def _prediction(
     pivot_date: date | None,
     detector_status: str,
     detector_faults: tuple[str, ...] = (),
+    candidate_semantics: str = "CONFIRMED_STRUCTURE",
 ) -> MorphologyPrediction:
     return MorphologyPrediction(
-        candidate_id=_candidate_id(pattern, start, end, pivot_date),
+        candidate_id=_candidate_id(pattern, start, end, pivot_date, candidate_semantics),
         pattern=pattern,
         start_date=start,
         end_date=end,
@@ -74,6 +86,7 @@ def _prediction(
         pivot_level=pivot_level,
         detector_status=detector_status,
         detector_faults=detector_faults,
+        candidate_semantics=candidate_semantics,
     )
 
 
@@ -96,9 +109,11 @@ def _segment_key(segment) -> tuple:
 def extract_core_morphology_predictions(frame: pd.DataFrame, *, asof_date: date) -> list[MorphologyPrediction]:
     """Emit DEVELOPMENT predictions from the canonical landmark-first stack.
 
-    v0.3.1 preserves first-pass atomic P2 segments and adds multi-turn spans as
-    a strict superset. P1 landmarks and all morphology thresholds remain unchanged.
-    Multiple structural scales and Cup-family interpretations may coexist explicitly.
+    v0.4 preserves all confirmed first-pass and multi-turn structures and adds a
+    preregistered DEVELOPMENT-only open-right-edge Flat observation. The open
+    observation starts only from confirmed P1 SWING_HIGH landmarks and ends at
+    the explicit as-of horizon; it does not fabricate a P1 turn. P1 landmarks
+    and all morphology thresholds remain unchanged.
     """
     if frame.empty:
         return []
@@ -141,6 +156,22 @@ def extract_core_morphology_predictions(frame: pd.DataFrame, *, asof_date: date)
                 pivot_date=pivot.pivot_source_date,
                 detector_status=assessment.state.value,
                 detector_faults=tuple(item.value for item in assessment.faults),
+            )
+        )
+
+    # P8 experimental right-edge Flat observations. These are deliberately
+    # separate from confirmed P2 segments and retain explicit semantics in output.
+    for observation in enumerate_open_right_edge_flats(ordered, landmarks, asof_date=asof_date):
+        predictions.append(
+            _prediction(
+                pattern="FLAT_BASE",
+                start=observation.start.price_date,
+                end=observation.asof_date,
+                pivot_level=float(observation.start.price),
+                pivot_date=observation.start.price_date,
+                detector_status=observation.state.value,
+                detector_faults=tuple(item.value for item in observation.faults),
+                candidate_semantics=f"OPEN_RIGHT_EDGE:{OPEN_RIGHT_EDGE_FLAT_VERSION}",
             )
         )
 
