@@ -45,7 +45,7 @@ from .structural_assembly import (
     assemble_multiturn_segments,
 )
 
-PREDICTION_ADAPTER_VERSION = "p8-canonical-prediction-adapter-v0.6.1"
+PREDICTION_ADAPTER_VERSION = "p8-canonical-prediction-adapter-v0.7"
 
 
 def _session_index(frame: pd.DataFrame) -> dict[date, int]:
@@ -101,10 +101,15 @@ def _prediction(
 
 
 def _right_edge_context_complete(index: dict[date, int], *, right_rim: date, asof_date: date) -> bool:
-    """Preregistered daily-data context gate for completed Cup-without-Handle."""
     if right_rim not in index or asof_date not in index:
         return False
     return index[asof_date] - index[right_rim] >= MIN_HANDLE_DURATION_SESSIONS - 1
+
+
+def _cwh_status(body_state: CupBodyState, handle_state: HandleState) -> str:
+    if body_state == CupBodyState.RECOGNIZED and handle_state == HandleState.RECOGNIZED:
+        return "CUP_WITH_HANDLE_RECOGNIZED"
+    return "CUP_WITH_HANDLE_AMBIGUOUS"
 
 
 def _segment_key(segment) -> tuple:
@@ -119,9 +124,9 @@ def _segment_key(segment) -> tuple:
 def extract_core_morphology_predictions(frame: pd.DataFrame, *, asof_date: date) -> list[MorphologyPrediction]:
     """Emit DEVELOPMENT predictions from the canonical landmark-first stack.
 
-    v0.6.1 preserves confirmed structures and explicit right-edge observations,
-    and persists candidate depth where native geometry defines it. Observation
-    horizons/recovery highs are never fabricated P1 landmarks.
+    v0.7 preserves explicit right-edge observations and allows a Cup body that
+    passes hard gates but is research-ambiguous to compose into an explicitly
+    ambiguous CWH candidate. A rejected Cup body still cannot emit CWH.
     """
     if frame.empty:
         return []
@@ -228,8 +233,10 @@ def extract_core_morphology_predictions(frame: pd.DataFrame, *, asof_date: date)
             continue
         geometry = build_cup_body_geometry(ordered, segment.start, segment.trough, segment.recovery)
         body = assess_cup_body(geometry)
-        if body.state != CupBodyState.RECOGNIZED:
+        if body.state == CupBodyState.REJECTED:
             continue
+
+        body_faults = tuple(item.value for item in body.faults)
 
         for handle_geometry in assemble_handle_geometries(
             ordered,
@@ -239,11 +246,6 @@ def extract_core_morphology_predictions(frame: pd.DataFrame, *, asof_date: date)
         ):
             handle_assessment = assess_handle(handle_geometry)
             pivot = cup_with_handle_pivot(geometry, handle_geometry)
-            detector_status = (
-                "CUP_WITH_HANDLE_RECOGNIZED"
-                if handle_assessment.state == HandleState.RECOGNIZED
-                else "CUP_WITH_HANDLE_AMBIGUOUS"
-            )
             predictions.append(
                 _prediction(
                     pattern="CUP_WITH_HANDLE",
@@ -251,9 +253,9 @@ def extract_core_morphology_predictions(frame: pd.DataFrame, *, asof_date: date)
                     end=handle_geometry.handle_recovery.price_date,
                     pivot_level=pivot.pivot_level,
                     pivot_date=pivot.pivot_source_date,
-                    detector_status=detector_status,
+                    detector_status=_cwh_status(body.state, handle_assessment.state),
                     depth_pct=geometry.depth_pct,
-                    detector_faults=tuple(item.value for item in handle_assessment.faults),
+                    detector_faults=body_faults + tuple(item.value for item in handle_assessment.faults),
                 )
             )
 
@@ -263,11 +265,6 @@ def extract_core_morphology_predictions(frame: pd.DataFrame, *, asof_date: date)
             landmarks,
             asof_date=asof_date,
         ):
-            detector_status = (
-                "CUP_WITH_HANDLE_RECOGNIZED"
-                if observation.state == HandleState.RECOGNIZED
-                else "CUP_WITH_HANDLE_AMBIGUOUS"
-            )
             predictions.append(
                 _prediction(
                     pattern="CUP_WITH_HANDLE",
@@ -275,14 +272,14 @@ def extract_core_morphology_predictions(frame: pd.DataFrame, *, asof_date: date)
                     end=observation.asof_date,
                     pivot_level=float(geometry.right_rim.price),
                     pivot_date=geometry.right_rim.price_date,
-                    detector_status=detector_status,
+                    detector_status=_cwh_status(body.state, observation.state),
                     depth_pct=geometry.depth_pct,
-                    detector_faults=tuple(item.value for item in observation.faults),
+                    detector_faults=body_faults + tuple(item.value for item in observation.faults),
                     candidate_semantics=f"OPEN_RIGHT_EDGE_HANDLE:{OPEN_RIGHT_EDGE_HANDLE_VERSION}",
                 )
             )
 
-        if _right_edge_context_complete(index, right_rim=geometry.right_rim.price_date, asof_date=asof_date):
+        if body.state == CupBodyState.RECOGNIZED and _right_edge_context_complete(index, right_rim=geometry.right_rim.price_date, asof_date=asof_date):
             pivot = cup_without_handle_pivot(geometry)
             predictions.append(
                 _prediction(
