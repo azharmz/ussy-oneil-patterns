@@ -5,6 +5,7 @@ import pytest
 
 from oneil_patterns.validation.canonical_predictions import (
     _candidate_id,
+    _prediction,
     _right_edge_context_complete,
     extract_core_morphology_predictions,
 )
@@ -32,6 +33,19 @@ def test_candidate_id_is_deterministic_and_semantic():
     changed = _candidate_id("DOUBLE_BOTTOM", date(2024, 1, 1), date(2024, 2, 1), date(2024, 1, 1))
     assert first == second
     assert first != changed
+
+
+def test_prediction_retains_faults_as_diagnostic_evidence():
+    item = _prediction(
+        pattern="DOUBLE_BOTTOM",
+        start=date(2024, 1, 1),
+        end=date(2024, 2, 1),
+        pivot_level=12.0,
+        pivot_date=date(2024, 1, 15),
+        detector_status="DOUBLE_BOTTOM_REJECTED",
+        detector_faults=("NO_SECOND_TROUGH_UNDERCUT",),
+    )
+    assert item.detector_faults == ("NO_SECOND_TROUGH_UNDERCUT",)
 
 
 def test_cup_no_handle_context_requires_minimum_observed_sessions_after_rim():
