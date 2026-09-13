@@ -5,6 +5,7 @@ import pytest
 
 from oneil_patterns.validation.advanced_predictions import (
     ADVANCED_PREDICTION_ADAPTER_VERSION,
+    ASCENDING_LANDMARK_REVERSAL_PCT,
     _is_recognized_core,
     extract_advanced_morphology_predictions,
 )
@@ -72,4 +73,5 @@ def test_base_on_base_components_only_consume_recognized_core_predictions():
     assert _is_recognized_core(recognized) is True
     assert _is_recognized_core(ambiguous) is False
     assert _is_recognized_core(advanced) is False
-    assert ADVANCED_PREDICTION_ADAPTER_VERSION == "p6-advanced-prediction-adapter-v0.1"
+    assert ADVANCED_PREDICTION_ADAPTER_VERSION == "p6-advanced-prediction-adapter-v0.2"
+    assert ASCENDING_LANDMARK_REVERSAL_PCT == 0.06
