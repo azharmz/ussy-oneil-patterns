@@ -8,6 +8,7 @@ import pandas as pd
 from oneil_patterns.landmarks.confirmed_window import extract_confirmed_window_landmarks
 from oneil_patterns.landmarks.excursion import extract_excursion_landmarks
 from oneil_patterns.landmarks.fusion import fuse_landmark_sources
+from oneil_patterns.landmarks.model import LandmarkType
 from oneil_patterns.morphology.cup_body import build_cup_body_geometry
 from oneil_patterns.morphology.cup_body_detector import CupBodyState, assess_cup_body
 from oneil_patterns.morphology.cup_family import (
@@ -49,7 +50,7 @@ from .structural_assembly import (
     assemble_multiturn_segments,
 )
 
-PREDICTION_ADAPTER_VERSION = "p8-canonical-prediction-adapter-v0.8"
+PREDICTION_ADAPTER_VERSION = "p8-canonical-prediction-adapter-v0.9"
 
 
 def _session_index(frame: pd.DataFrame) -> dict[date, int]:
@@ -116,6 +117,14 @@ def _cwh_status(body_state: CupBodyState, handle_state: HandleState) -> str:
     return "CUP_WITH_HANDLE_AMBIGUOUS"
 
 
+def _db_right_edge_is_open(landmarks, *, trough_2_date: date) -> bool:
+    """A DB right edge is open only while no later confirmed P1 high exists."""
+    return not any(
+        item.type == LandmarkType.SWING_HIGH and item.price_date > trough_2_date
+        for item in landmarks
+    )
+
+
 def _segment_key(segment) -> tuple:
     return (
         segment.start.price_date,
@@ -128,10 +137,10 @@ def _segment_key(segment) -> tuple:
 def extract_core_morphology_predictions(frame: pd.DataFrame, *, asof_date: date) -> list[MorphologyPrediction]:
     """Emit DEVELOPMENT predictions from the canonical landmark-first stack.
 
-    v0.8 keeps confirmed structures and explicit right-edge observations. A
-    right-edge Double Bottom observation may measure total elapsed base duration
-    through T only after post-trough-2 price has recovered to the middle-peak
-    pivot; T is not fabricated as a P1 landmark.
+    v0.9 keeps explicit right-edge observations, but a Double Bottom completion
+    observation exists only while the W truly has an open right edge. Once a
+    later P1 swing high is confirmed, the historical W is no longer extended to
+    the current as-of horizon.
     """
     if frame.empty:
         return []
@@ -209,24 +218,25 @@ def extract_core_morphology_predictions(frame: pd.DataFrame, *, asof_date: date)
             )
         )
 
-        observation = observe_open_right_edge_double_bottom(ordered, geometry, asof_date=asof_date)
-        if observation is not None:
-            predictions.append(
-                _prediction(
-                    pattern="DOUBLE_BOTTOM",
-                    start=geometry.left_high.price_date,
-                    end=asof_date,
-                    pivot_level=pivot.pivot_level,
-                    pivot_date=pivot.pivot_source_date,
-                    detector_status=observation.state.value,
-                    depth_pct=geometry.overall_depth_pct,
-                    detector_faults=tuple(item.value for item in observation.faults),
-                    candidate_semantics=(
-                        f"OPEN_RIGHT_EDGE_DOUBLE_BOTTOM:{OPEN_RIGHT_EDGE_DOUBLE_BOTTOM_VERSION}:"
-                        f"TROUGH2={geometry.trough_2.price_date.isoformat()}"
-                    ),
+        if _db_right_edge_is_open(landmarks, trough_2_date=geometry.trough_2.price_date):
+            observation = observe_open_right_edge_double_bottom(ordered, geometry, asof_date=asof_date)
+            if observation is not None:
+                predictions.append(
+                    _prediction(
+                        pattern="DOUBLE_BOTTOM",
+                        start=geometry.left_high.price_date,
+                        end=asof_date,
+                        pivot_level=pivot.pivot_level,
+                        pivot_date=pivot.pivot_source_date,
+                        detector_status=observation.state.value,
+                        depth_pct=geometry.overall_depth_pct,
+                        detector_faults=tuple(item.value for item in observation.faults),
+                        candidate_semantics=(
+                            f"OPEN_RIGHT_EDGE_DOUBLE_BOTTOM:{OPEN_RIGHT_EDGE_DOUBLE_BOTTOM_VERSION}:"
+                            f"TROUGH2={geometry.trough_2.price_date.isoformat()}"
+                        ),
+                    )
                 )
-            )
 
     for observation in enumerate_open_right_edge_cnh(ordered, landmarks, asof_date=asof_date):
         suffix = {
