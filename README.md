@@ -10,13 +10,13 @@ Canonical implementation repository for CAN SLIM workstream **#33 — O'Neil Pat
 > 2. read `docs/progress-board.md`;
 > 3. read `docs/decisions/p8-development-freeze-v1.md`;
 > 4. read `docs/decisions/p8-final-verdict.md`;
-> 5. read `docs/decisions/p6-final-verdict.md` before changing advanced-pattern semantics;
+> 5. read `docs/decisions/p6-development-freeze-v1.md` and `docs/decisions/p6-final-verdict.md` before changing advanced-pattern semantics;
 > 6. read `docs/production-output-contract-v2.md` before building a downstream consumer;
 > 7. inspect the latest commits only after the frozen records above are understood.
 >
 > For #33/P8, this repository is the source of truth. The parent `azharmz/ussy-canslim-research` is roadmap/HQ and must not host a parallel pattern engine.
 >
-> Current state: core #33 is frozen with a **CONDITIONAL PASS** and production schema v2 is aligned to the exact frozen P8 adapter. P6 advanced patterns are separately frozen at **CONDITIONAL PASS WITH VALIDATION DEBT** and remain outside core production v2. Do not reopen morphology tuning from NFLX, P6 examples, or trading outcomes.
+> Current state: core #33 is frozen with a **CONDITIONAL PASS** and production schema v2 is aligned to the exact frozen P8 adapter. P6 advanced patterns completed an authoritative DEVELOPMENT freeze plus untouched one-shot VALIDATION and finished **VALIDATION FAIL / FROZEN — NOT PRODUCTION-VALIDATED**. Do not tune from the opened P6 validation rows, NFLX, or trading outcomes.
 
 ## Parent contract
 
@@ -52,7 +52,7 @@ THEORY
 
 ## Current phase
 
-**#33 core morphology and production output are frozen after P8 independent validation. P6 advanced morphology is separately frozen after a source-grounded v2 audit.**
+**#33 core morphology and production output are frozen after P8 independent validation. P6 advanced morphology has completed a separate authoritative validation cycle and failed the morphology-recognition bar.**
 
 P8 final verdict: **CONDITIONAL PASS / FROZEN WITH VALIDATION DEBT**.
 
@@ -75,28 +75,34 @@ The NFLX row had pivot/depth intentionally unscored before opening VALIDATION, s
 
 ## P6 advanced-pattern verdict
 
-P6 final verdict: **CONDITIONAL PASS / FROZEN WITH VALIDATION DEBT**.
+P6 final verdict: **VALIDATION FAIL / FROZEN — NOT PRODUCTION-VALIDATED**.
 
-Frozen P6 v2 contracts:
+P6 was held to a separate authoritative DEVELOPMENT + untouched VALIDATION cycle without reopening frozen core morphology.
 
-- `advanced-patterns-v2`;
-- `ascending-base-v2`.
+Frozen DEVELOPMENT:
 
-Key v2 changes:
+- 5 authoritative `ASCENDING_BASE` positives;
+- 5 authoritative `BASE_ON_BASE` positives;
+- 10/10 source-dimension `MATCH`;
+- zero candidate identity `STATUS_CONFLICT`;
+- detector states nevertheless included 3 rejected Ascending Base examples and 4 ambiguous Base-on-Base examples.
 
-- removed the unsupported Ascending Base `0.05` pullback-dispersion state gate;
-- removed the unsupported Base-on-Base `0.50` / `0.75` close-fraction state gates;
-- Ascending Base uses published three-pullback/higher-high/higher-low morphology plus a source-grounded 6%–25% outer ambiguity guardrail, with 10%–20% retained as textbook evidence;
-- Base-on-Base recognizes the unambiguous entirely-above case, rejects a second base that never rises above the first-base high, and preserves partial overlap as `AMBIGUOUS` because “mostly above” has no universal published percentage threshold.
+Untouched one-shot VALIDATION:
 
-Full repository regression after P6 v2: **227 tests passed** on workflow run `34746587586`.
+- STT `ASCENDING_BASE`: source-dimension `MATCH`, candidate `UNIQUE`, detector state `ASCENDING_BASE_REJECTED`;
+- C `BASE_ON_BASE`: source-dimension `MATCH`, source-equivalent multiple candidates, matched detector state `BASE_ON_BASE_AMBIGUOUS`;
+- validation workflow run `34750413835`, artifact id `10315775412`;
+- one-shot workflow path was removed after execution.
 
-P6 has no independent labelled corpus comparable to P8, so advanced families remain outside production schema v2 and do not inherit P8's evidence level.
+Because neither untouched authoritative positive is `RECOGNIZED`, sparse source-dimension agreement is not treated as a morphology pass. The earlier P6 conditional-pass verdict is superseded by the authoritative validation result.
+
+P6 remains outside production schema v2. A future cycle requires new authoritative morphology evidence and a new untouched validation set; STT/C may not be recycled as untouched validation.
 
 See:
 
 - `docs/p6-source-audit-v2.md`
 - `docs/p6-advanced-patterns-contract-v2.md`
+- `docs/decisions/p6-development-freeze-v1.md`
 - `docs/decisions/p6-final-verdict.md`
 
 ## Frozen production contract
@@ -140,7 +146,7 @@ Separately frozen P6 advanced families:
 - `ASCENDING_BASE`
 - `BASE_ON_BASE`
 
-They do not automatically inherit the same P8 evidence level and are not emitted by frozen production v2.
+They failed their separate authoritative validation cycle and are not emitted by frozen production v2.
 
 Downstream consumers must preserve explicit states such as:
 
@@ -161,6 +167,6 @@ If an extremum is economically located at one date but only confirmed later, pre
 
 ## Research rule
 
-The frozen P8 detector/evaluator semantics must not be revised from NFLX VALIDATION or from later trading performance. P6 v2 must likewise not be tuned from trading outcomes or used as a route to reopen P3/P4/P5/P8.
+The frozen P8 detector/evaluator semantics must not be revised from NFLX VALIDATION or from later trading performance. The frozen P6 cycle must likewise not be revised from STT/C VALIDATION, trading outcomes, or used as a route to reopen P3/P4/P5/P8.
 
-Any future research revision requires a new explicitly versioned research cycle and must not rewrite the frozen P8 or P6 verdicts.
+Any future P6 research requires a new explicitly versioned cycle, new authoritative morphology evidence, and a new untouched validation set. Frozen verdicts remain historical evidence and must not be rewritten by post-hoc tuning.
