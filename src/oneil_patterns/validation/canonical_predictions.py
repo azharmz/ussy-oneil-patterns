@@ -50,7 +50,7 @@ def _candidate_id(
     start: date,
     end: date | None,
     pivot_date: date | None,
-    candidate_semantics: str,
+    candidate_semantics: str = "CONFIRMED_STRUCTURE",
 ) -> str:
     payload = "|".join(
         [
