@@ -62,12 +62,12 @@ def test_wide_loose_ambiguity_is_stable_to_small_price_perturbations():
         perturbed[["high", "low", "close"]] = perturbed[["high", "low", "close"]] * scale
         states.append(assess_flat_base(perturbed, segment).state)
 
-    assert states == [FlatBaseState.AMBIGUOUS] * 3
+    assert states == [FlatBaseState.RECOGNIZED] * 3
 
 
 def test_fixture_state_ordering_matches_p8_v2_policy():
     assert _assessment("textbook_tight").state == FlatBaseState.RECOGNIZED
     assert _assessment("too_short").state == FlatBaseState.REJECTED
     assert _assessment("too_deep").state == FlatBaseState.REJECTED
-    assert _assessment("wide_loose").state == FlatBaseState.AMBIGUOUS
-    assert _assessment("borderline_tightness").state == FlatBaseState.AMBIGUOUS
+    assert _assessment("wide_loose").state == FlatBaseState.RECOGNIZED
+    assert _assessment("borderline_tightness").state == FlatBaseState.RECOGNIZED

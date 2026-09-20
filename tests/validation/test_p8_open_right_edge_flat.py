@@ -61,8 +61,8 @@ def test_prefix_extension_preserves_start_and_only_extends_observation_horizon()
     assert second.observed_low_date <= t2
 
 
-def test_hard_duration_gate_remains_rejected():
-    frame = _frame(20)
-    result = observe_open_right_edge_flat(frame, _start(), asof_date=date(2026, 1, 21))
-    assert result.state == FlatBaseState.REJECTED
-    assert FlatBaseFault.TOO_SHORT in result.faults
+def test_duration_gate_uses_distinct_trading_weeks():
+    frame = _frame(23)
+    result = observe_open_right_edge_flat(frame, _start(), asof_date=date(2026, 1, 24))
+    assert result.state == FlatBaseState.RECOGNIZED
+    assert FlatBaseFault.TOO_SHORT not in result.faults

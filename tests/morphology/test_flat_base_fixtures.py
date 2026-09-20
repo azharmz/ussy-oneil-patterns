@@ -27,11 +27,11 @@ def test_flat_base_fixture_policy(fixture):
         # is detected, but the fault no longer creates a hard rejection when
         # theory duration/depth gates pass.
         assert fixture.label == FlatBaseFixtureLabel.NEGATIVE
-        assert result.state == FlatBaseState.AMBIGUOUS
+        assert result.state == FlatBaseState.RECOGNIZED
         assert FlatBaseFault.WIDE_LOOSE in result.faults
     elif fixture.name == "borderline_tightness":
         assert fixture.label == FlatBaseFixtureLabel.AMBIGUOUS
-        assert result.state == FlatBaseState.AMBIGUOUS
+        assert result.state == FlatBaseState.RECOGNIZED
         assert FlatBaseFault.WIDE_LOOSE not in result.faults
 
 

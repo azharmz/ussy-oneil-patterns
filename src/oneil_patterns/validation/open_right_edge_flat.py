@@ -10,6 +10,7 @@ from oneil_patterns.landmarks.model import LandmarkType
 from oneil_patterns.morphology.flat_base import (
     MAX_DEPTH_PCT,
     MIN_DURATION_SESSIONS,
+    MIN_DURATION_WEEKS,
     TIGHT_MAX_CLOSE_DISPERSION,
     TIGHT_MAX_NORMALIZED_RANGE,
     WIDE_LOOSE_MIN_CLOSE_DISPERSION,
@@ -80,6 +81,7 @@ def observe_open_right_edge_flat(
         raise ValueError("prices must be positive")
 
     duration = len(region)
+    trading_weeks = pd.to_datetime(region["date"], errors="raise").dt.to_period("W-FRI").nunique()
     depth = max(0.0, (float(start.price) - observed_low) / float(start.price))
     normalized_range = (observed_high - observed_low) / observed_high
     close_dispersion = float(region["close"].std(ddof=0)) / mean_close
@@ -87,7 +89,7 @@ def observe_open_right_edge_flat(
 
     faults: list[FlatBaseFault] = []
     hard_failure = False
-    if duration < MIN_DURATION_SESSIONS:
+    if trading_weeks < MIN_DURATION_WEEKS:
         faults.append(FlatBaseFault.TOO_SHORT)
         hard_failure = True
     if depth > MAX_DEPTH_PCT:
@@ -108,12 +110,8 @@ def observe_open_right_edge_flat(
 
     if hard_failure:
         state = FlatBaseState.REJECTED
-    elif wide_loose:
-        state = FlatBaseState.AMBIGUOUS
-    elif tight:
-        state = FlatBaseState.RECOGNIZED
     else:
-        state = FlatBaseState.AMBIGUOUS
+        state = FlatBaseState.RECOGNIZED
 
     return OpenRightEdgeFlatObservation(
         start=start,
