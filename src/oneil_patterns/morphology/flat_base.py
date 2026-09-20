@@ -119,19 +119,13 @@ def assess_flat_base(frame: pd.DataFrame, segment: BaseSegmentCandidate) -> Flat
 
     if not duration_gate or not depth_gate:
         state = FlatBaseState.REJECTED
-        reason = "hard_gate_failure"
-    elif wide_loose:
-        state = FlatBaseState.AMBIGUOUS
-        reason = "research_wide_loose_fault_requires_caution"
+        reason = "source_backed_hard_gate_failure"
     elif boundary_context:
         state = FlatBaseState.AMBIGUOUS
         reason = "boundary_context_requires_caution"
-    elif tight:
-        state = FlatBaseState.RECOGNIZED
-        reason = "hard_gates_pass_and_research_tightness_pass"
     else:
-        state = FlatBaseState.AMBIGUOUS
-        reason = "hard_gates_pass_but_tightness_intermediate"
+        state = FlatBaseState.RECOGNIZED
+        reason = "vnext_structural_gates_pass"
 
     return FlatBaseAssessment(
         state=state,
@@ -142,7 +136,7 @@ def assess_flat_base(frame: pd.DataFrame, segment: BaseSegmentCandidate) -> Flat
         upper_band_fraction_5pct=upper_band_fraction,
         faults=tuple(faults),
         evidence={
-            "version": "flat-base-v0.2",
+            "version": "flat-base-vnext-r2d",
             "reason": reason,
             "min_duration_weeks": MIN_DURATION_WEEKS,
             "duration_semantics": "distinct_trading_weeks_W_FRI",
@@ -150,7 +144,7 @@ def assess_flat_base(frame: pd.DataFrame, segment: BaseSegmentCandidate) -> Flat
             "legacy_min_duration_sessions_evidence_only": MIN_DURATION_SESSIONS,
             "max_depth_pct": MAX_DEPTH_PCT,
             "tightness_policy": "research_only",
-            "wide_loose_state_policy": "AMBIGUOUS_NOT_HARD_REJECT",
+            "wide_loose_state_policy": "EVIDENCE_ONLY",
             "tight_max_normalized_range": TIGHT_MAX_NORMALIZED_RANGE,
             "tight_max_close_dispersion": TIGHT_MAX_CLOSE_DISPERSION,
             "wide_loose_min_normalized_range": WIDE_LOOSE_MIN_NORMALIZED_RANGE,
