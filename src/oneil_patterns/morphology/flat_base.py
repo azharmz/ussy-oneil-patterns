@@ -144,7 +144,10 @@ def assess_flat_base(frame: pd.DataFrame, segment: BaseSegmentCandidate) -> Flat
         evidence={
             "version": "flat-base-v0.2",
             "reason": reason,
-            "min_duration_weeks": MIN_DURATION_WEEKS,\n            "duration_semantics": "distinct_trading_weeks_W_FRI",\n            "trading_weeks": int(trading_weeks),\n            "legacy_min_duration_sessions_evidence_only": MIN_DURATION_SESSIONS,
+            "min_duration_weeks": MIN_DURATION_WEEKS,
+            "duration_semantics": "distinct_trading_weeks_W_FRI",
+            "trading_weeks": int(trading_weeks),
+            "legacy_min_duration_sessions_evidence_only": MIN_DURATION_SESSIONS,
             "max_depth_pct": MAX_DEPTH_PCT,
             "tightness_policy": "research_only",
             "wide_loose_state_policy": "AMBIGUOUS_NOT_HARD_REJECT",
