@@ -1,5 +1,7 @@
 from datetime import timedelta
 
+import pandas as pd
+
 from oneil_patterns.landmarks.candidate import LandmarkCandidate
 from oneil_patterns.landmarks.model import LandmarkType
 from oneil_patterns.morphology.cup_body_detector import assess_cup_body
@@ -81,3 +83,29 @@ def test_malformed_handle_attempt_is_not_silently_relabelled_no_handle():
 
     family = classify_cup_family(assess_cup_body(cup.geometry), handle, right_edge_context_complete=True)
     assert family == CupFamilyState.CUP_HANDLE_AMBIGUOUS
+
+
+def test_handle_region_measurements_are_additive_and_do_not_change_state():
+    cup = _rounded_u()
+    right = cup.geometry.right_rim.price_date
+    low = _mark(LandmarkType.SWING_LOW, 86.0, right + timedelta(days=2))
+    recovery = _mark(LandmarkType.SWING_HIGH, 95.0, right + timedelta(days=6))
+    dates = [cup.geometry.left_rim.price_date + timedelta(days=i) for i in range((recovery.price_date - cup.geometry.left_rim.price_date).days + 1)]
+    close = [95.0 for _ in dates]
+    volume = [1000.0 for _ in dates]
+    for i, d in enumerate(dates):
+        if right <= d <= recovery.price_date:
+            close[i] = 94.0
+            volume[i] = 800.0
+    frame = pd.DataFrame({"date": dates, "close": close, "volume": volume})
+
+    geometry = build_handle_geometry(cup.geometry, _session_index(cup), low, recovery, frame=frame)
+    handle = assess_handle(geometry)
+
+    assert geometry.median_close_position_in_cup > 0.5
+    assert geometry.fraction_closes_at_or_above_cup_midpoint == 1.0
+    assert geometry.minimum_close_position_in_cup > 0.5
+    assert geometry.handle_to_pre20_median_volume_ratio == 0.8
+    assert geometry.low_in_upper_half is False
+    assert handle.state == HandleState.REJECTED
+    assert HandleFault.BELOW_CUP_MIDPOINT in handle.faults
