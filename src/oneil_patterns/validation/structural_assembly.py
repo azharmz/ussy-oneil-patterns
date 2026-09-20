@@ -150,7 +150,7 @@ def assemble_handle_geometries(frame, cup, landmarks, *, asof_date):
             continue
         recovery = min(recoveries, key=lambda item: (item.price_date, item.confirmed_date, item.price))
         try:
-            handle = build_handle_geometry(cup, index, low, recovery)
+            handle = build_handle_geometry(cup, index, low, recovery, frame=frame)
         except ValueError:
             continue
         out[(low.price_date, recovery.price_date)] = handle
