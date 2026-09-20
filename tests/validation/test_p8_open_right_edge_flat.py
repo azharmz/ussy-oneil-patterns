@@ -62,7 +62,7 @@ def test_prefix_extension_preserves_start_and_only_extends_observation_horizon()
 
 
 def test_duration_gate_uses_distinct_trading_weeks():
-    frame = _frame(20)
-    result = observe_open_right_edge_flat(frame, _start(), asof_date=date(2026, 1, 21))
+    frame = _frame(23)
+    result = observe_open_right_edge_flat(frame, _start(), asof_date=date(2026, 1, 24))
     assert result.state == FlatBaseState.RECOGNIZED
     assert FlatBaseFault.TOO_SHORT not in result.faults
