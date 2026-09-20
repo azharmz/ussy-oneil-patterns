@@ -28,6 +28,11 @@ class HandleGeometry:
     cup_midpoint_price: float
     low_in_upper_half: bool
     recovery_to_right_rim_ratio: float
+    median_close_position_in_cup: float
+    fraction_closes_at_or_above_cup_midpoint: float
+    minimum_close_position_in_cup: float
+    normalized_close_slope: float
+    handle_to_pre20_median_volume_ratio: float | None
 
     def __post_init__(self) -> None:
         if self.handle_high.type != LandmarkType.SWING_HIGH:
@@ -72,6 +77,7 @@ def build_handle_geometry(
     session_index: Mapping[date, int],
     handle_low: LandmarkCandidate,
     handle_recovery: LandmarkCandidate,
+    frame=None,
 ) -> HandleGeometry:
     if handle_low.type != LandmarkType.SWING_LOW:
         raise ValueError("handle_low must be SWING_LOW")
@@ -98,6 +104,32 @@ def build_handle_geometry(
     cup_midpoint = cup.trough.price + (cup.left_rim.price - cup.trough.price) / 2.0
     depth = (handle_high.price - handle_low.price) / handle_high.price
 
+    # Additive vNext research evidence. State semantics below remain unchanged.
+    median_position = fraction_upper = minimum_position = normalized_slope = 0.0
+    volume_ratio = None
+    if frame is not None:
+        import pandas as pd
+        region = frame.copy()
+        region_dates = pd.to_datetime(region["date"], errors="raise").dt.date
+        mask = (region_dates >= handle_high.price_date) & (region_dates <= handle_recovery.price_date)
+        handle_frame = region.loc[mask]
+        closes = pd.to_numeric(handle_frame["close"], errors="raise").astype(float)
+        cup_range = cup.left_rim.price - cup.trough.price
+        positions = (closes - cup.trough.price) / cup_range
+        median_position = float(positions.median())
+        fraction_upper = float((closes >= cup_midpoint).mean())
+        minimum_position = float(positions.min())
+        if len(closes) > 1:
+            normalized_slope = float((closes.iloc[-1] - closes.iloc[0]) / handle_high.price / (len(closes) - 1))
+        if "volume" in region.columns:
+            hi = region.index[region_dates == handle_high.price_date][0]
+            pre = region.loc[region.index < hi].tail(20)
+            if len(pre) >= 5:
+                pre_med = float(pd.to_numeric(pre["volume"], errors="raise").median())
+                handle_med = float(pd.to_numeric(handle_frame["volume"], errors="raise").median())
+                if pre_med > 0:
+                    volume_ratio = handle_med / pre_med
+
     return HandleGeometry(
         handle_high=handle_high,
         handle_low=handle_low,
@@ -108,6 +140,11 @@ def build_handle_geometry(
         cup_midpoint_price=cup_midpoint,
         low_in_upper_half=handle_low.price >= cup_midpoint,
         recovery_to_right_rim_ratio=handle_recovery.price / handle_high.price,
+        median_close_position_in_cup=median_position,
+        fraction_closes_at_or_above_cup_midpoint=fraction_upper,
+        minimum_close_position_in_cup=minimum_position,
+        normalized_close_slope=normalized_slope,
+        handle_to_pre20_median_volume_ratio=volume_ratio,
     )
 
 
