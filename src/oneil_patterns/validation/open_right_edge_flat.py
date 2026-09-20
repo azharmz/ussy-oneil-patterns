@@ -10,6 +10,7 @@ from oneil_patterns.landmarks.model import LandmarkType
 from oneil_patterns.morphology.flat_base import (
     MAX_DEPTH_PCT,
     MIN_DURATION_SESSIONS,
+    MIN_DURATION_WEEKS,
     TIGHT_MAX_CLOSE_DISPERSION,
     TIGHT_MAX_NORMALIZED_RANGE,
     WIDE_LOOSE_MIN_CLOSE_DISPERSION,
@@ -87,7 +88,7 @@ def observe_open_right_edge_flat(
 
     faults: list[FlatBaseFault] = []
     hard_failure = False
-    if duration < MIN_DURATION_SESSIONS:
+    if trading_weeks < MIN_DURATION_WEEKS:
         faults.append(FlatBaseFault.TOO_SHORT)
         hard_failure = True
     if depth > MAX_DEPTH_PCT:
