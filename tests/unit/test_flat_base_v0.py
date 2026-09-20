@@ -45,11 +45,11 @@ def _frame(segment, *, loose=False, borderline=False):
     })
 
 
-def test_duration_below_25_sessions_rejected():
+def test_five_trading_weeks_can_recognize_below_25_sessions():
     segment = _segment(duration=24, depth=0.10)
     result = assess_flat_base(_frame(segment), segment)
-    assert result.state == FlatBaseState.REJECTED
-    assert FlatBaseFault.TOO_SHORT in result.faults
+    assert result.state == FlatBaseState.RECOGNIZED
+    assert FlatBaseFault.TOO_SHORT not in result.faults
 
 
 def test_depth_above_15_percent_rejected():
@@ -71,15 +71,15 @@ def test_tight_research_band_can_recognize_after_hard_gates_pass():
 def test_wide_loose_fault_is_evidence_only_after_hard_gates_pass():
     segment = _segment(duration=25, depth=0.10)
     result = assess_flat_base(_frame(segment, loose=True), segment)
-    assert result.state == FlatBaseState.AMBIGUOUS
+    assert result.state == FlatBaseState.RECOGNIZED
     assert FlatBaseFault.WIDE_LOOSE in result.faults
-    assert result.evidence["wide_loose_state_policy"] == "AMBIGUOUS_NOT_HARD_REJECT"
+    assert result.evidence["wide_loose_state_policy"] == "EVIDENCE_ONLY"
 
 
 def test_intermediate_tightness_recognizes_when_structural_gates_pass():
     segment = _segment(duration=25, depth=0.10)
     result = assess_flat_base(_frame(segment, borderline=True), segment)
-    assert result.state == FlatBaseState.AMBIGUOUS
+    assert result.state == FlatBaseState.RECOGNIZED
     assert FlatBaseFault.WIDE_LOOSE not in result.faults
 
 
