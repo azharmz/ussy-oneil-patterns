@@ -2,7 +2,7 @@ name: tests
 
 on:
   push:
-    branches: [main]
+    branches: [main, research/flat-base-vnext-r2d]
   pull_request:
   workflow_dispatch:
     inputs:
