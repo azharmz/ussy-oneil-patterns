@@ -68,7 +68,7 @@ def test_tight_research_band_can_recognize_after_hard_gates_pass():
     assert result.evidence["tightness_policy"] == "research_only"
 
 
-def test_wide_loose_fault_is_ambiguous_after_hard_gates_pass():
+def test_wide_loose_fault_is_evidence_only_after_hard_gates_pass():
     segment = _segment(duration=25, depth=0.10)
     result = assess_flat_base(_frame(segment, loose=True), segment)
     assert result.state == FlatBaseState.AMBIGUOUS
@@ -76,7 +76,7 @@ def test_wide_loose_fault_is_ambiguous_after_hard_gates_pass():
     assert result.evidence["wide_loose_state_policy"] == "AMBIGUOUS_NOT_HARD_REJECT"
 
 
-def test_intermediate_tightness_remains_ambiguous():
+def test_intermediate_tightness_recognizes_when_structural_gates_pass():
     segment = _segment(duration=25, depth=0.10)
     result = assess_flat_base(_frame(segment, borderline=True), segment)
     assert result.state == FlatBaseState.AMBIGUOUS
