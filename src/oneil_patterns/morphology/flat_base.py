@@ -8,6 +8,8 @@ import pandas as pd
 
 from oneil_patterns.segmentation.model import BaseSegmentCandidate
 
+MIN_DURATION_WEEKS = 5
+# Retained for compatibility/evidence only; vNext does not use this as the duration gate.
 MIN_DURATION_SESSIONS = 25
 MAX_DEPTH_PCT = 0.15
 
@@ -65,9 +67,10 @@ def assess_flat_base(frame: pd.DataFrame, segment: BaseSegmentCandidate) -> Flat
     `WIDE_LOOSE` as fault evidence but no longer lets that research-only band
     create a hard rejection when the theory gates pass.
     """
-    duration_gate = segment.duration_sessions >= MIN_DURATION_SESSIONS
-    depth_gate = segment.depth_pct <= MAX_DEPTH_PCT
     region = _region(frame, segment)
+    trading_weeks = pd.to_datetime(region["date"], errors="raise").dt.to_period("W-FRI").nunique() if not region.empty else 0
+    duration_gate = trading_weeks >= MIN_DURATION_WEEKS
+    depth_gate = segment.depth_pct <= MAX_DEPTH_PCT
 
     if region.empty or region[["high", "low", "close"]].isna().any().any():
         return FlatBaseAssessment(
@@ -77,7 +80,7 @@ def assess_flat_base(frame: pd.DataFrame, segment: BaseSegmentCandidate) -> Flat
             normalized_high_low_range=None,
             close_dispersion_pct=None,
             upper_band_fraction_5pct=None,
-            evidence={"reason": "missing_or_empty_region", "version": "flat-base-v0.2"},
+            evidence={"reason": "missing_or_empty_region", "version": "flat-base-vnext-r2d"},
         )
 
     base_high = float(region["high"].max())
@@ -141,7 +144,7 @@ def assess_flat_base(frame: pd.DataFrame, segment: BaseSegmentCandidate) -> Flat
         evidence={
             "version": "flat-base-v0.2",
             "reason": reason,
-            "min_duration_sessions": MIN_DURATION_SESSIONS,
+            "min_duration_weeks": MIN_DURATION_WEEKS,\n            "duration_semantics": "distinct_trading_weeks_W_FRI",\n            "trading_weeks": int(trading_weeks),\n            "legacy_min_duration_sessions_evidence_only": MIN_DURATION_SESSIONS,
             "max_depth_pct": MAX_DEPTH_PCT,
             "tightness_policy": "research_only",
             "wide_loose_state_policy": "AMBIGUOUS_NOT_HARD_REJECT",
