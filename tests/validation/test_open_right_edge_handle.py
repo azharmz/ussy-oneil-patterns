@@ -81,3 +81,37 @@ def test_future_rows_are_rejected():
         observe_open_right_edge_handle(
             _frame("2024-01-25"), cup, low, asof_date=date(2024, 1, 24)
         )
+
+
+def test_open_right_measurements_are_additive_and_state_invariant():
+    cup = _cup()
+    low = _mark(LandmarkType.SWING_LOW, date(2024, 1, 17), 90.0, date(2024, 1, 18))
+    frame = _frame("2024-01-24")
+    frame["volume"] = [1000.0] * len(frame)
+    result = observe_open_right_edge_handle(frame, cup, low, asof_date=date(2024, 1, 24))
+    assert result.median_close_position_in_cup is not None
+    assert result.fraction_closes_at_or_above_cup_midpoint == 1.0
+    assert result.minimum_close_position_in_cup is not None
+    assert result.state == HandleState.RECOGNIZED
+    # Fewer than 20 sessions precede the right rim in this fixture.
+    assert result.handle_to_pre20_median_volume_ratio is None
+
+
+def test_open_right_lower_half_region_remains_rejected():
+    cup = _cup()
+    low = _mark(LandmarkType.SWING_LOW, date(2024, 1, 17), 80.0, date(2024, 1, 18))
+    frame = _frame("2024-01-24")
+    frame["close"] = [80.0] * len(frame)
+    result = observe_open_right_edge_handle(frame, cup, low, asof_date=date(2024, 1, 24))
+    assert result.median_close_position_in_cup < 0.5
+    assert result.state == HandleState.REJECTED
+
+
+def test_open_right_deep_handle_is_quality_evidence_not_universal_veto():
+    cup = _cup()
+    low = _mark(LandmarkType.SWING_LOW, date(2024, 1, 17), 83.0, date(2024, 1, 18))
+    frame = _frame("2024-01-24")
+    frame["close"] = [90.0] * len(frame)
+    result = observe_open_right_edge_handle(frame, cup, low, asof_date=date(2024, 1, 24))
+    assert result.depth_pct > 0.12
+    assert result.state == HandleState.RECOGNIZED

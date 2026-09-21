@@ -15,7 +15,7 @@ from oneil_patterns.morphology.cup_family import (
     HandleState,
 )
 
-OPEN_RIGHT_EDGE_HANDLE_VERSION = "p8-open-right-edge-handle-v0.1"
+OPEN_RIGHT_EDGE_HANDLE_VERSION = "p8-open-right-edge-handle-v0.2-cwh-vnext"
 
 
 @dataclass(frozen=True, slots=True)
@@ -28,6 +28,11 @@ class OpenRightEdgeHandleObservation:
     low_in_upper_half: bool
     state: HandleState
     faults: tuple[HandleFault, ...]
+    median_close_position_in_cup: float | None = None
+    fraction_closes_at_or_above_cup_midpoint: float | None = None
+    minimum_close_position_in_cup: float | None = None
+    normalized_close_slope: float | None = None
+    handle_to_pre20_median_volume_ratio: float | None = None
 
 
 def _session_index(frame: pd.DataFrame) -> dict[date, int]:
@@ -70,17 +75,42 @@ def observe_open_right_edge_handle(
     cup_midpoint = cup.trough.price + (cup.left_rim.price - cup.trough.price) / 2.0
     low_in_upper_half = handle_low.price >= cup_midpoint
 
+    median_position = fraction_upper = minimum_position = normalized_slope = None
+    volume_ratio = None
+    handle_frame = frame.iloc[hi : ai + 1]
+    closes = pd.to_numeric(handle_frame["close"], errors="raise").astype(float)
+    cup_range = cup.left_rim.price - cup.trough.price
+    if cup_range > 0 and not closes.empty:
+        positions = (closes - cup.trough.price) / cup_range
+        median_position = float(positions.median())
+        fraction_upper = float((closes >= cup_midpoint).mean())
+        minimum_position = float(positions.min())
+        if len(closes) > 1:
+            x = pd.Series(range(len(closes)), dtype=float)
+            x_centered = x - x.mean()
+            y_centered = closes.reset_index(drop=True) - closes.mean()
+            denom = float((x_centered * x_centered).sum())
+            if denom > 0 and cup.right_rim.price > 0:
+                normalized_slope = float((x_centered * y_centered).sum() / denom / cup.right_rim.price)
+    if "volume" in frame.columns and hi >= 20:
+        pre = frame.iloc[hi - 20 : hi]
+        pre_med = float(pd.to_numeric(pre["volume"], errors="raise").median())
+        handle_med = float(pd.to_numeric(handle_frame["volume"], errors="raise").median())
+        if pre_med > 0:
+            volume_ratio = handle_med / pre_med
+
     faults: list[HandleFault] = []
     if duration < MIN_HANDLE_DURATION_SESSIONS:
         faults.append(HandleFault.TOO_SHORT)
     if not low_in_upper_half:
         faults.append(HandleFault.BELOW_CUP_MIDPOINT)
-
-    if faults:
-        state = HandleState.REJECTED
-    elif depth > NORMAL_MAX_HANDLE_DEPTH_PCT:
+    if depth > NORMAL_MAX_HANDLE_DEPTH_PCT:
         faults.append(HandleFault.DEEP_HANDLE_EXCEPTIONAL)
-        state = HandleState.AMBIGUOUS
+
+    if HandleFault.TOO_SHORT in faults:
+        state = HandleState.REJECTED
+    elif not low_in_upper_half and (median_position is None or median_position < 0.5):
+        state = HandleState.REJECTED
     else:
         state = HandleState.RECOGNIZED
 
@@ -93,6 +123,11 @@ def observe_open_right_edge_handle(
         low_in_upper_half=low_in_upper_half,
         state=state,
         faults=tuple(faults),
+        median_close_position_in_cup=median_position,
+        fraction_closes_at_or_above_cup_midpoint=fraction_upper,
+        minimum_close_position_in_cup=minimum_position,
+        normalized_close_slope=normalized_slope,
+        handle_to_pre20_median_volume_ratio=volume_ratio,
     )
 
 

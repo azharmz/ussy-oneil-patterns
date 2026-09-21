@@ -40,6 +40,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Run canonical #33/P8 DEVELOPMENT morphology validation")
     parser.add_argument("--labels", default="data/p8/labels_v0.csv")
     parser.add_argument("--example-id")
+    parser.add_argument("--validation", action="store_true", help="Run locked VALIDATION labels after candidate semantics are frozen")
     parser.add_argument("--context-calendar-days", type=int, default=240)
     parser.add_argument("--boundary-tolerance-days", type=int, default=10)
     parser.add_argument("--pivot-date-tolerance-days", type=int, default=3)
@@ -61,6 +62,7 @@ def _run_one(label, args) -> dict:
         boundary_tolerance_days=args.boundary_tolerance_days,
         pivot_date_tolerance_days=args.pivot_date_tolerance_days,
         pivot_price_tolerance_pct=args.pivot_price_tolerance_pct,
+        allow_validation=args.validation,
     )
     same_pattern = [item for item in predictions if item.pattern == label.pattern]
     identity_audit = audit_candidate_identities(same_pattern)
@@ -106,11 +108,12 @@ def main() -> int:
         raise ValueError("pivot-price-tolerance-pct must be non-negative")
 
     all_labels = load_label_corpus_csv(ROOT / args.labels)
-    labels = [item for item in all_labels if item.split == CorpusSplit.DEVELOPMENT]
+    selected_split = CorpusSplit.VALIDATION if args.validation else CorpusSplit.DEVELOPMENT
+    labels = [item for item in all_labels if item.split == selected_split]
     if args.example_id:
         labels = [item for item in labels if item.example_id == args.example_id]
     if not labels:
-        raise ValueError("no DEVELOPMENT labels selected")
+        raise ValueError(f"no {selected_split.value} labels selected")
 
     results = [_run_one(label, args) for label in labels]
     agreement_counts = dict(sorted(Counter(item["agreement"]["agreement_state"] for item in results).items()))
@@ -140,7 +143,7 @@ def main() -> int:
 
     report = {
         "stage": "P8",
-        "scope": "CANONICAL_AUTHORITATIVE_DEVELOPMENT",
+        "scope": "CANONICAL_AUTHORITATIVE_VALIDATION" if args.validation else "CANONICAL_AUTHORITATIVE_DEVELOPMENT",
         "prediction_adapter_version": PREDICTION_ADAPTER_VERSION,
         "pivot_adapter_version": PIVOT_ADAPTER_VERSION,
         "evaluator_version": EVALUATOR_VERSION,
@@ -159,7 +162,7 @@ def main() -> int:
         "agreement_by_detector_status": joint_counts,
         "results": results,
         "guardrails": [
-            "Only DEVELOPMENT labels enter detector comparison; VALIDATION remains locked.",
+            "Split selection is explicit; VALIDATION requires --validation and is only run after candidate semantics are frozen.",
             "OHLCV routing is strict R2 -> Yahoo -> Tiingo; only SourceUnavailable permits fallback.",
             "All input bars are truncated at each label asof_date.",
             "Source dimensions are scored only at their published precision and comparable semantic role.",

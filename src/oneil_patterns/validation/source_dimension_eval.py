@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from datetime import date
 from typing import Iterable
 
@@ -22,6 +22,7 @@ class MorphologyPrediction:
     detector_faults: tuple[str, ...] = ()
     candidate_semantics: str = "CONFIRMED_STRUCTURE"
     structural_signature: tuple[str, ...] = ()
+    evidence: dict = field(default_factory=dict)
 
 
 @dataclass(frozen=True, slots=True)
@@ -106,9 +107,12 @@ def evaluate_positive_development_label(
     boundary_tolerance_days: int = 10,
     pivot_date_tolerance_days: int = 3,
     pivot_price_tolerance_pct: float = 0.01,
+    allow_validation: bool = False,
 ) -> SourceDimensionAgreement:
-    if label.split != CorpusSplit.DEVELOPMENT:
-        raise ValueError("source-dimension evaluator is locked to DEVELOPMENT labels")
+    if label.split == CorpusSplit.VALIDATION and not allow_validation:
+        raise ValueError("source-dimension evaluator is locked to DEVELOPMENT labels unless validation is explicitly unlocked")
+    if label.split not in (CorpusSplit.DEVELOPMENT, CorpusSplit.VALIDATION):
+        raise ValueError("source-dimension evaluator requires DEVELOPMENT or explicitly unlocked VALIDATION labels")
     if label.label != LabelValue.POSITIVE:
         raise ValueError("v0.5 evaluates positive authoritative labels only")
     if boundary_tolerance_days < 0 or pivot_date_tolerance_days < 0 or pivot_price_tolerance_pct < 0:
