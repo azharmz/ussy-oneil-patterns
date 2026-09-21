@@ -115,16 +115,23 @@ def build_handle_geometry(
         handle_frame = region.loc[mask]
         closes = pd.to_numeric(handle_frame["close"], errors="raise").astype(float)
         cup_range = cup.left_rim.price - cup.trough.price
-        positions = (closes - cup.trough.price) / cup_range
-        median_position = float(positions.median())
-        fraction_upper = float((closes >= cup_midpoint).mean())
-        minimum_position = float(positions.min())
-        if len(closes) > 1:
-            normalized_slope = float((closes.iloc[-1] - closes.iloc[0]) / handle_high.price / (len(closes) - 1))
+        if cup_range > 0 and not closes.empty:
+            positions = (closes - cup.trough.price) / cup_range
+            median_position = float(positions.median())
+            fraction_upper = float((closes >= cup_midpoint).mean())
+            minimum_position = float(positions.min())
+            if len(closes) > 1 and handle_high.price > 0:
+                x = pd.Series(range(len(closes)), dtype=float)
+                x_centered = x - x.mean()
+                y_centered = closes.reset_index(drop=True) - closes.mean()
+                denom = float((x_centered * x_centered).sum())
+                if denom > 0:
+                    normalized_slope = float((x_centered * y_centered).sum() / denom / handle_high.price)
         if "volume" in region.columns:
-            hi = region.index[region_dates == handle_high.price_date][0]
-            pre = region.loc[region.index < hi].tail(20)
-            if len(pre) >= 5:
+            hi_positions = [i for i, value in enumerate(region_dates.tolist()) if value == handle_high.price_date]
+            if hi_positions and hi_positions[0] >= 20:
+                hi = hi_positions[0]
+                pre = region.iloc[hi - 20 : hi]
                 pre_med = float(pd.to_numeric(pre["volume"], errors="raise").median())
                 handle_med = float(pd.to_numeric(handle_frame["volume"], errors="raise").median())
                 if pre_med > 0:
