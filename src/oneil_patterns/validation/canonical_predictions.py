@@ -31,7 +31,7 @@ from .structural_assembly import (
     assemble_multiturn_segments,
 )
 
-PREDICTION_ADAPTER_VERSION = "p8-canonical-prediction-adapter-v1.1"
+PREDICTION_ADAPTER_VERSION = "p8-canonical-prediction-adapter-v1.2-cwh-measurement"
 
 
 def _session_index(frame: pd.DataFrame) -> dict[date, int]:
@@ -56,8 +56,7 @@ def _candidate_id(pattern, start, end, pivot_date, candidate_semantics="CONFIRME
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()[:24]
 
 
-def _prediction(*, pattern, start, end, pivot_level, pivot_date, detector_status, depth_pct=None,
-                detector_faults=(), candidate_semantics="CONFIRMED_STRUCTURE", structural_signature=()):
+def _prediction(*, pattern, start, end, pivot_level, pivot_date, detector_status, depth_pct=None,\n                detector_faults=(), candidate_semantics="CONFIRMED_STRUCTURE", structural_signature=(), evidence=None):
     return MorphologyPrediction(
         candidate_id=_candidate_id(pattern, start, end, pivot_date, candidate_semantics),
         pattern=pattern,
@@ -69,8 +68,7 @@ def _prediction(*, pattern, start, end, pivot_level, pivot_date, detector_status
         detector_status=detector_status,
         detector_faults=detector_faults,
         candidate_semantics=candidate_semantics,
-        structural_signature=structural_signature,
-    )
+        structural_signature=structural_signature,\n        evidence=evidence or {},\n    )
 
 
 def _right_edge_context_complete(index, *, right_rim, asof_date):
@@ -238,9 +236,7 @@ def extract_core_morphology_predictions(frame: pd.DataFrame, *, asof_date: date)
                 pivot_date=pivot.pivot_source_date, detector_status=_cwh_status(body.state, handle_assessment.state),
                 depth_pct=geometry.depth_pct,
                 detector_faults=body_faults + tuple(item.value for item in handle_assessment.faults),
-                structural_signature=_sig(left_rim=geometry.left_rim.price_date, cup_low=geometry.trough.price_date,
-                                          right_rim=geometry.right_rim.price_date, handle_low=handle_geometry.handle_low.price_date),
-            ))
+                structural_signature=_sig(left_rim=geometry.left_rim.price_date, cup_low=geometry.trough.price_date,\n                                          right_rim=geometry.right_rim.price_date, handle_low=handle_geometry.handle_low.price_date),\n                evidence={\n                    "cwh_measurement_version": "cwh-vnext-r2b-v0.1",\n                    "handle_duration_sessions": handle_geometry.duration_sessions,\n                    "handle_depth_pct": handle_geometry.depth_pct,\n                    "absolute_low_in_upper_half": handle_geometry.low_in_upper_half,\n                    "median_close_position_in_cup": handle_geometry.median_close_position_in_cup,\n                    "fraction_closes_at_or_above_cup_midpoint": handle_geometry.fraction_closes_at_or_above_cup_midpoint,\n                    "minimum_close_position_in_cup": handle_geometry.minimum_close_position_in_cup,\n                    "normalized_close_slope": handle_geometry.normalized_close_slope,\n                    "handle_to_pre20_median_volume_ratio": handle_geometry.handle_to_pre20_median_volume_ratio,\n                },\n            ))
 
         for observation in enumerate_open_right_edge_handles(ordered, geometry, landmarks, asof_date=asof_date):
             predictions.append(_prediction(
