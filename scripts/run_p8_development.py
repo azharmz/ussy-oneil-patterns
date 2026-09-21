@@ -62,6 +62,7 @@ def _run_one(label, args) -> dict:
         boundary_tolerance_days=args.boundary_tolerance_days,
         pivot_date_tolerance_days=args.pivot_date_tolerance_days,
         pivot_price_tolerance_pct=args.pivot_price_tolerance_pct,
+        allow_validation=args.validation,
     )
     same_pattern = [item for item in predictions if item.pattern == label.pattern]
     identity_audit = audit_candidate_identities(same_pattern)
