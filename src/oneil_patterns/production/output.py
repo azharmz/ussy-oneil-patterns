@@ -15,7 +15,7 @@ from oneil_patterns.production.identity import (
 from oneil_patterns.validation.source_dimension_eval import MorphologyPrediction
 
 OUTPUT_SCHEMA_VERSION = "oneil-pattern-output-v2"
-ENGINE_VERSION = "33-core-p8-frozen-v1"
+ENGINE_VERSION = "33-core-p8-frozen-v2"
 LABELLED_VALIDATION_STATUS = "P8_CONDITIONAL_PASS_FROZEN"
 
 CONTRACT_VERSIONS = {
@@ -23,8 +23,8 @@ CONTRACT_VERSIONS = {
     "segmentation": "p2-segmentation-v1+explicit-right-edge-observation",
     "flat_base": "flat-base-v2",
     "double_bottom": "double-bottom-v3",
-    "cup_family": "cup-family-v2",
-    "prediction_adapter": "p8-canonical-prediction-adapter-v1.1",
+    "cup_family": "cup-family-v3-cwoh-fragmentation",
+    "prediction_adapter": "p8-canonical-prediction-adapter-v1.2-cwh-measurement",
     "pivot_adapter": "p8-pivot-adapter-v0.2",
     "candidate_identity_audit": "p8-candidate-identity-audit-v0.4",
     "base_identity": CORE_BASE_ID_VERSION,

@@ -29,7 +29,7 @@ P8 verdict: **CONDITIONAL PASS / FROZEN WITH VALIDATION DEBT**.
 
 Frozen DEVELOPMENT evidence is 20 authoritative positives, five per core family, with 20/20 source-dimension `MATCH` and zero true candidate identity `STATUS_CONFLICT`. NFLX `CUP_WITH_HANDLE` was then opened once as untouched VALIDATION and structurally matched uniquely at the authoritative start, while retaining frozen `CUP_WITH_HANDLE_AMBIGUOUS / BELOW_CUP_MIDPOINT` debt. No post-validation tuning is allowed.
 
-Production schema remains **`oneil-pattern-output-v2`**, engine **`33-core-p8-frozen-v1`**. Production directly consumes the frozen P8 canonical prediction adapter and preserves candidate/base/lineage identity, explicit detector state, candidate semantics, structural signature, pivot/depth when available, faults, and contract versions.
+Production schema remains **`oneil-pattern-output-v2`**, engine **`33-core-p8-frozen-v2`**. CWOH vNext fragmentation semantics were promoted on 2026-09-21 after independent DEVELOPMENT and locked VALIDATION: `FRAGMENTED_BOTTOM` remains evidence but is non-state-bearing by itself, while SHARP_V/WEAK_RIGHT_RIM_RECOVERY and duration/depth gates remain unchanged. Production directly consumes the frozen P8 canonical prediction adapter and preserves candidate/base/lineage identity, explicit detector state, candidate semantics, structural signature, pivot/depth when available, faults, and contract versions.
 
 ### P6 advanced families
 

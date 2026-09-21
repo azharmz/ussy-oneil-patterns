@@ -1,6 +1,6 @@
 # #33 Progress Board
 
-Last updated: 2026-09-13
+Last updated: 2026-09-21
 
 `azharmz/ussy-oneil-patterns` is the canonical implementation repository for #33 O'Neil Pattern Recognition. `azharmz/ussy-canslim-research` is the parent/HQ consumer and must not host a parallel pattern engine.
 
@@ -28,11 +28,11 @@ Production schema `oneil-pattern-output-v2` remains limited to:
 
 - `FLAT_BASE` — `flat-base-v2`
 - `DOUBLE_BOTTOM` — `double-bottom-v3`
-- `CUP_WITHOUT_HANDLE` — `cup-family-v2`
-- `CUP_WITH_HANDLE` — `cup-family-v2`
+- `CUP_WITHOUT_HANDLE` — `cup-family-v3-cwoh-fragmentation`
+- `CUP_WITH_HANDLE` — `cup-family-v3-cwoh-fragmentation`
 
-Canonical adapter: `p8-canonical-prediction-adapter-v1.1`.
-Production engine: `33-core-p8-frozen-v1`.
+Canonical adapter: `p8-canonical-prediction-adapter-v1.2-cwh-measurement`.
+Production engine: `33-core-p8-frozen-v2`.
 Base identity: `core-base-id-v1`.
 Lineage: `core-lineage-v1`.
 
@@ -138,3 +138,8 @@ For the evidence currently available, #33 governance is complete:
 - no further #33 detector work is authorized absent new authoritative morphology evidence satisfying the P6 reopening gate.
 
 The next CAN SLIM workstream is #34 in the parent repository. This O'Neil Pattern repo/chat must not implement #34.
+
+
+## CWOH vNext closure — 2026-09-21
+
+CUP_WITHOUT_HANDLE residual `FRAGMENTED_BOTTOM` semantics completed independent DEVELOPMENT and locked VALIDATION, then promoted to production. The narrow production change keeps `FRAGMENTED_BOTTOM` as evidence but makes it non-state-bearing when it is the sole research-band fault. SHARP_V, WEAK_RIGHT_RIM_RECOVERY, duration/depth gates, pivots, candidate construction, source matching, base identity and lineage semantics remain unchanged. Validation: INTC/ARW/AMD/SE 4/4 source-dimension MATCH. Production promotion SHA before contract-version closure: `130cfce5d71c85b9832dd50a3a44f7c193a0c1d7`.

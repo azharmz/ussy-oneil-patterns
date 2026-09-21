@@ -3,7 +3,7 @@
 Status: **FROZEN**
 
 Schema: `oneil-pattern-output-v2`
-Engine: `33-core-p8-frozen-v1`
+Engine: `33-core-p8-frozen-v2`
 P8 status: `P8_CONDITIONAL_PASS_FROZEN`
 
 Production is a wrapper over the exact canonical P8 prediction adapter. It must not maintain a second detector implementation.
@@ -58,8 +58,8 @@ This intentionally prefers under-merging over unstable fuzzy lineage merges. Lat
 - segmentation: `p2-segmentation-v1+explicit-right-edge-observation`
 - Flat: `flat-base-v2`
 - Double Bottom: `double-bottom-v3`
-- Cup family: `cup-family-v2`
-- prediction adapter: `p8-canonical-prediction-adapter-v1.1`
+- Cup family: `cup-family-v3-cwoh-fragmentation`
+- prediction adapter: `p8-canonical-prediction-adapter-v1.2-cwh-measurement`
 - pivot adapter: `p8-pivot-adapter-v0.2`
 - candidate identity audit: `p8-candidate-identity-audit-v0.4`
 - production base identity: `core-base-id-v1`
@@ -70,3 +70,10 @@ This intentionally prefers under-merging over unstable fuzzy lineage merges. Lat
 Consumers must preserve ambiguity and faults. `AMBIGUOUS` must not be silently converted into either `RECOGNIZED` or no-pattern.
 
 No downstream return/performance evidence may mutate this frozen contract or its morphology semantics.
+
+
+## CWOH vNext production addendum — 2026-09-21
+
+The production Cup-family contract now incorporates the independently developed and locked-validated CWOH fragmentation semantic. `FRAGMENTED_BOTTOM` remains emitted as diagnostic evidence but is non-state-bearing when it is the sole research-band fault. `SHARP_V` and `WEAK_RIGHT_RIM_RECOVERY` remain state-bearing ambiguity faults; duration/depth hard gates are unchanged. No numerical morphology threshold changed.
+
+Promotion evidence: DEVELOPMENT 4/4 audited and locked VALIDATION INTC/ARW/AMD/SE 4/4 source-dimension MATCH. The production wrapper continues to consume the canonical P8 adapter; no second detector implementation was introduced.

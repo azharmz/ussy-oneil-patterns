@@ -54,7 +54,7 @@ def test_candidate_id_change_changes_assessment_id_but_structure_has_stable_base
 def test_output_exposes_frozen_p8_status_and_semantics():
     record = _record("FLAT_BASE_AMBIGUOUS")
     assert record.output_schema_version == OUTPUT_SCHEMA_VERSION == "oneil-pattern-output-v2"
-    assert record.engine_version == ENGINE_VERSION == "33-core-p8-frozen-v1"
+    assert record.engine_version == ENGINE_VERSION == "33-core-p8-frozen-v2"
     assert record.labelled_validation_status == LABELLED_VALIDATION_STATUS == "P8_CONDITIONAL_PASS_FROZEN"
     assert record.detector_contract_version == "flat-base-v2"
     assert record.normalized_status == "AMBIGUOUS"
@@ -76,8 +76,8 @@ def test_run_manifest_carries_frozen_contract_versions_and_record_count():
     assert manifest.labelled_validation_status == "P8_CONDITIONAL_PASS_FROZEN"
     assert manifest.contract_versions["flat_base"] == "flat-base-v2"
     assert manifest.contract_versions["double_bottom"] == "double-bottom-v3"
-    assert manifest.contract_versions["cup_family"] == "cup-family-v2"
-    assert manifest.contract_versions["prediction_adapter"] == "p8-canonical-prediction-adapter-v1.1"
+    assert manifest.contract_versions["cup_family"] == "cup-family-v3-cwoh-fragmentation"
+    assert manifest.contract_versions["prediction_adapter"] == "p8-canonical-prediction-adapter-v1.2-cwh-measurement"
     assert manifest.generated_at_utc == "2026-09-12T01:02:03+00:00"
 
 

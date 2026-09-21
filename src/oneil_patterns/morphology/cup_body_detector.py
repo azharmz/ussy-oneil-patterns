@@ -44,7 +44,7 @@ def assess_cup_body(geometry: CupBodyGeometry) -> CupBodyAssessment:
     """Assess Cup morphology under CWOH vNext validation-candidate semantics.
 
     Duration/depth remain hard theory gates. Roundedness/continuity numerical
-    proxies remain explicit research evidence. FRAGMENTED_BOTTOM is retained as\n    evidence but is non-state-bearing in this validation candidate; SHARP_V and\n    WEAK_RIGHT_RIM_RECOVERY remain AMBIGUOUS. No numeric cutoff is changed.
+    proxies remain explicit research evidence. FRAGMENTED_BOTTOM is retained as evidence but is non-state-bearing by itself; SHARP_V and\n    WEAK_RIGHT_RIM_RECOVERY remain AMBIGUOUS. No numeric cutoff is changed.
     """
     faults: list[CupBodyFault] = []
 
