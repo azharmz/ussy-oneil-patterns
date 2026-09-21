@@ -161,13 +161,21 @@ def assess_handle(handle: HandleGeometry) -> HandleAssessment:
         faults.append(HandleFault.TOO_SHORT)
     if not handle.low_in_upper_half:
         faults.append(HandleFault.BELOW_CUP_MIDPOINT)
-
-    if HandleFault.TOO_SHORT in faults or HandleFault.BELOW_CUP_MIDPOINT in faults:
-        return HandleAssessment(HandleState.REJECTED, tuple(faults), handle)
-
     if handle.depth_pct > NORMAL_MAX_HANDLE_DEPTH_PCT:
         faults.append(HandleFault.DEEP_HANDLE_EXCEPTIONAL)
-        return HandleAssessment(HandleState.AMBIGUOUS, tuple(faults), handle)
+
+    # vNext: duration remains a categorical structural guard.  Upper-half
+    # placement is judged from the handle region when causal path evidence is
+    # available; the absolute landmark low remains explicit evidence rather
+    # than a one-tick veto.  A missing region descriptor fails closed to the
+    # legacy absolute-low rule.  The 12% depth line remains a quality flag,
+    # not a universal categorical veto.
+    if HandleFault.TOO_SHORT in faults:
+        return HandleAssessment(HandleState.REJECTED, tuple(faults), handle)
+    if not handle.low_in_upper_half:
+        region_midpoint = handle.median_close_position_in_cup
+        if region_midpoint is None or region_midpoint < 0.5:
+            return HandleAssessment(HandleState.REJECTED, tuple(faults), handle)
 
     return HandleAssessment(HandleState.RECOGNIZED, tuple(faults), handle)
 
