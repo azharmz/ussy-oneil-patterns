@@ -122,3 +122,5 @@ def test_open_cnh_fragmentation_is_evidence_but_not_state_bearing():
     assert CupBodyFault.SHARP_V not in result.faults
     assert CupBodyFault.WEAK_RIGHT_RIM_RECOVERY not in result.faults
     assert result.state == CupBodyState.RECOGNIZED
+
+# [p8-run] Full canonical DEVELOPMENT replay after open-right fragmentation alignment.
