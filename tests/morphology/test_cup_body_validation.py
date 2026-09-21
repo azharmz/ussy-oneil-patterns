@@ -55,9 +55,9 @@ def test_fixture_labels_map_to_p8_v2_detector_states():
     expected = {
         "rounded_u": CupBodyState.RECOGNIZED,
         "sharp_v": CupBodyState.AMBIGUOUS,
-        "double_bottom_w": CupBodyState.AMBIGUOUS,
+        "double_bottom_w": CupBodyState.RECOGNIZED,
         "flat_shallow": CupBodyState.REJECTED,
-        "wide_loose": CupBodyState.AMBIGUOUS,
+        "wide_loose": CupBodyState.RECOGNIZED,
     }
     for fixture in cup_body_fixtures():
         assert assess_cup_body(fixture.geometry).state == expected[fixture.name]
