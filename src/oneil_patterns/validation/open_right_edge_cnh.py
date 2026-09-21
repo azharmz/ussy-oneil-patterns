@@ -111,12 +111,13 @@ def observe_open_right_edge_cnh(
         if recovery_ratio < MIN_RIGHT_RIM_RECOVERY_RATIO:
             faults.append(CupBodyFault.WEAK_RIGHT_RIM_RECOVERY)
 
+    # Align open-right state semantics with confirmed cup-body validation:
+    # FRAGMENTED_BOTTOM remains evidence but is non-state-bearing by itself.
     if any(f in hard_faults for f in faults) or CupBodyFault.SHALLOW_NON_CUP in faults:
         state = CupBodyState.REJECTED
     elif any(
         f in {
             CupBodyFault.SHARP_V,
-            CupBodyFault.FRAGMENTED_BOTTOM,
             CupBodyFault.WEAK_RIGHT_RIM_RECOVERY,
         }
         for f in faults

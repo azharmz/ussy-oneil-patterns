@@ -98,3 +98,27 @@ def test_enumerator_keeps_trough_open_until_later_high_is_confirmed():
     assert len(observations) == 1
     assert observations[0].left_rim == left
     assert observations[0].trough == trough
+
+
+def test_open_cnh_fragmentation_is_evidence_but_not_state_bearing():
+    dates = pd.bdate_range("2024-01-02", periods=45)
+    closes = [99.0] * 45
+    # Three separated bottom observations satisfy the non-V dwell requirement,
+    # while their 10%-band continuity is intentionally fragmented.
+    closes[15] = 80.0
+    closes[17] = 82.0
+    closes[19] = 83.0
+    for i in range(20, 45):
+        closes[i] = min(96.0, 89.0 + (i - 20) * 0.4)
+    highs = [c + 1.0 for c in closes]
+    frame = pd.DataFrame({"date": dates, "high": highs, "close": closes})
+    ds = pd.to_datetime(frame["date"]).dt.date.tolist()
+    left = _mark(LandmarkType.SWING_HIGH, ds[0], 100.0, ds[2])
+    trough = _mark(LandmarkType.SWING_LOW, ds[15], 80.0, ds[18])
+
+    result = observe_open_right_edge_cnh(frame, left, trough, asof_date=ds[-1])
+
+    assert CupBodyFault.FRAGMENTED_BOTTOM in result.faults
+    assert CupBodyFault.SHARP_V not in result.faults
+    assert CupBodyFault.WEAK_RIGHT_RIM_RECOVERY not in result.faults
+    assert result.state == CupBodyState.RECOGNIZED
