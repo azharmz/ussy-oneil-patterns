@@ -85,7 +85,7 @@ def test_malformed_handle_attempt_is_not_silently_relabelled_no_handle():
     assert family == CupFamilyState.CUP_HANDLE_AMBIGUOUS
 
 
-def test_handle_region_measurements_are_additive_and_do_not_change_state():
+def test_handle_region_can_prevent_single_low_excursion_from_vetoing_cwh():
     cup = _rounded_u()
     right = cup.geometry.right_rim.price_date
     low = _mark(LandmarkType.SWING_LOW, 86.0, right + timedelta(days=2))
