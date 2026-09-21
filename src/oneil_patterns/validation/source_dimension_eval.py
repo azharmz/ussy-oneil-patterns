@@ -35,6 +35,7 @@ class SourceDimensionAgreement:
     start_error_days: int | None
     end_error_days: int | None
     pivot_date_error_days: int | None
+    # Legacy field name: value is a fractional relative error (0.01 == 1%), not percentage points.
     pivot_price_error_pct: float | None
     depth_error_pct_points: float | None
     boundary_validation_state: str
@@ -106,6 +107,7 @@ def evaluate_positive_development_label(
     *,
     boundary_tolerance_days: int = 10,
     pivot_date_tolerance_days: int = 3,
+    # Legacy parameter name: tolerance is a fractional ratio (0.01 == 1%).
     pivot_price_tolerance_pct: float = 0.01,
     allow_validation: bool = False,
 ) -> SourceDimensionAgreement:
