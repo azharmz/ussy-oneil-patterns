@@ -263,6 +263,17 @@ def extract_core_morphology_predictions(frame: pd.DataFrame, *, asof_date: date)
                 candidate_semantics=f"OPEN_RIGHT_EDGE_HANDLE:{OPEN_RIGHT_EDGE_HANDLE_VERSION}",
                 structural_signature=_sig(left_rim=geometry.left_rim.price_date, cup_low=geometry.trough.price_date,
                                           right_rim=geometry.right_rim.price_date, handle_low=observation.handle_low.price_date),
+                evidence={
+                    "cwh_measurement_version": "cwh-vnext-r2b-v0.2",
+                    "handle_duration_sessions": observation.duration_sessions,
+                    "handle_depth_pct": observation.depth_pct,
+                    "absolute_low_in_upper_half": observation.low_in_upper_half,
+                    "median_close_position_in_cup": observation.median_close_position_in_cup,
+                    "fraction_closes_at_or_above_cup_midpoint": observation.fraction_closes_at_or_above_cup_midpoint,
+                    "minimum_close_position_in_cup": observation.minimum_close_position_in_cup,
+                    "normalized_close_slope": observation.normalized_close_slope,
+                    "handle_to_pre20_median_volume_ratio": observation.handle_to_pre20_median_volume_ratio,
+                },
             ))
 
         if body.state == CupBodyState.RECOGNIZED and _right_edge_context_complete(index, right_rim=geometry.right_rim.price_date, asof_date=asof_date):
