@@ -15,7 +15,7 @@ from oneil_patterns.morphology.cup_family import (
     HandleState,
 )
 
-OPEN_RIGHT_EDGE_HANDLE_VERSION = "p8-open-right-edge-handle-v0.1"
+OPEN_RIGHT_EDGE_HANDLE_VERSION = "p8-open-right-edge-handle-v0.2-cwh-vnext"
 
 
 @dataclass(frozen=True, slots=True)
