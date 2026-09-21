@@ -13,7 +13,7 @@ from oneil_patterns.segmentation.segmenter import segment_base_candidates
 
 from .structural_assembly import assemble_multiturn_segments
 
-CUP_BODY_DIAGNOSTIC_VERSION = "p8-cup-body-diagnostic-v0.1"
+CUP_BODY_DIAGNOSTIC_VERSION = "p8-cup-body-diagnostic-v0.2"
 
 
 def _segment_key(segment) -> tuple:
@@ -74,11 +74,22 @@ def extract_cup_body_diagnostics(frame: pd.DataFrame, *, asof_date: date) -> lis
                 "right_rim_date": geometry.right_rim.price_date.isoformat(),
                 "right_rim_price": geometry.right_rim.price,
                 "duration_sessions": geometry.duration_sessions,
+                "decline_sessions": geometry.decline_sessions,
+                "recovery_sessions": geometry.recovery_sessions,
                 "depth_pct": geometry.depth_pct,
                 "right_rim_to_left_rim_ratio": geometry.right_rim_to_left_rim_ratio,
+                "left_right_time_ratio": geometry.left_right_time_ratio,
                 "sessions_within_5pct_of_trough": geometry.sessions_within_5pct_of_trough,
                 "sessions_within_10pct_of_trough": geometry.sessions_within_10pct_of_trough,
+                "bottom_dwell_5pct_fraction": geometry.sessions_within_5pct_of_trough / geometry.duration_sessions,
+                "bottom_dwell_10pct_fraction": geometry.sessions_within_10pct_of_trough / geometry.duration_sessions,
+                "lower_third_fraction": geometry.lower_third_fraction,
                 "max_bottom_run_10pct": geometry.max_bottom_run_10pct,
+                "bottom_continuity_10pct": (
+                    geometry.max_bottom_run_10pct / geometry.sessions_within_10pct_of_trough
+                    if geometry.sessions_within_10pct_of_trough
+                    else 0.0
+                ),
                 "state": assessment.state.value,
                 "faults": [item.value for item in assessment.faults],
                 "theory_gates_pass": assessment.theory_gates_pass,
