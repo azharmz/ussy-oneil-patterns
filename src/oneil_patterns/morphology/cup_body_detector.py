@@ -93,7 +93,7 @@ def assess_cup_body(geometry: CupBodyGeometry) -> CupBodyAssessment:
         research_pass = False
     else:
         state = CupBodyState.RECOGNIZED
-        research_pass = True
+        research_pass = CupBodyFault.FRAGMENTED_BOTTOM not in faults
 
     return CupBodyAssessment(
         state=state,
