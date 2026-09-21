@@ -47,7 +47,7 @@ jobs:
       - run: python -m pip install -e ".[validation]"
       - run: |
           if [[ "${{ github.event_name }}" == "push" ]]; then
-            python scripts/run_p8_development.py --example-id p8-label-0005
+            python scripts/run_p8_development.py
           else
             python scripts/run_p8_development.py
           fi
