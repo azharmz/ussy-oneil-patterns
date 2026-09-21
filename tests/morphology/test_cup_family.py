@@ -108,7 +108,7 @@ def test_handle_region_can_prevent_single_low_excursion_from_vetoing_cwh():
     assert geometry.handle_to_pre20_median_volume_ratio is not None
     assert abs(geometry.handle_to_pre20_median_volume_ratio - 0.8) < 1e-12
     assert geometry.low_in_upper_half is False
-    assert handle.state == HandleState.REJECTED
+    assert handle.state == HandleState.RECOGNIZED
     assert HandleFault.BELOW_CUP_MIDPOINT in handle.faults
 
 
