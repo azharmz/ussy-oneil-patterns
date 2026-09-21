@@ -20,11 +20,11 @@ def _by_symbol_pattern():
 def test_committed_authoritative_corpus_passes_frozen_schema():
     labels = _labels()
 
-    assert len(labels) == 21
+    assert len(labels) == 22
     assert {item.provenance for item in labels} == {LabelProvenance.AUTHORITATIVE_SOURCE}
     assert {item.split for item in labels} == {CorpusSplit.DEVELOPMENT, CorpusSplit.VALIDATION}
     assert len([item for item in labels if item.split == CorpusSplit.DEVELOPMENT]) == 20
-    assert len([item for item in labels if item.split == CorpusSplit.VALIDATION]) == 1
+    assert len([item for item in labels if item.split == CorpusSplit.VALIDATION]) == 2
 
     counts = Counter(item.pattern for item in labels if item.split == CorpusSplit.DEVELOPMENT)
     assert counts == {
@@ -38,7 +38,8 @@ def test_committed_authoritative_corpus_passes_frozen_schema():
 def test_validation_examples_are_frozen_before_detector_comparison():
     validation = [item for item in _labels() if item.split == CorpusSplit.VALIDATION]
     assert [(item.example_id, item.symbol, item.pattern) for item in validation] == [
-        ("p8-label-0002", "NFLX", "CUP_WITH_HANDLE")
+        ("p8-label-0002", "NFLX", "CUP_WITH_HANDLE"),
+        ("p8-label-0022", "MELI", "DOUBLE_BOTTOM"),
     ]
     assert all(item.label.value == "POSITIVE" for item in validation)
 
