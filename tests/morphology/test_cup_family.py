@@ -105,7 +105,8 @@ def test_handle_region_measurements_are_additive_and_do_not_change_state():
     assert geometry.median_close_position_in_cup > 0.5
     assert geometry.fraction_closes_at_or_above_cup_midpoint == 1.0
     assert geometry.minimum_close_position_in_cup > 0.5
-    assert geometry.handle_to_pre20_median_volume_ratio == 0.8
+    assert geometry.handle_to_pre20_median_volume_ratio is not None
+    assert abs(geometry.handle_to_pre20_median_volume_ratio - 0.8) < 1e-12
     assert geometry.low_in_upper_half is False
     assert handle.state == HandleState.REJECTED
     assert HandleFault.BELOW_CUP_MIDPOINT in handle.faults
