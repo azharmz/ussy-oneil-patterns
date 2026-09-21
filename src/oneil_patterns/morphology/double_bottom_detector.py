@@ -73,8 +73,12 @@ def assess_double_bottom(geometry: DoubleBottomGeometry) -> DoubleBottomAssessme
     if geometry.middle_peak_recovered_fraction < MIN_CLEAR_MIDDLE_RECOVERED_FRACTION:
         faults.append(DoubleBottomFault.WEAK_MIDDLE_REBOUND)
 
+    # vNext: IBD describes the second bottom as usually, not universally,
+    # lower than the first. Preserve a missing undercut as explicit quality
+    # evidence without making it an identity veto. Research-only shallow-
+    # undercut and weak-rebound bands remain state-bearing until separately
+    # validated.
     ambiguity_faults = {
-        DoubleBottomFault.NO_SECOND_TROUGH_UNDERCUT,
         DoubleBottomFault.SHALLOW_UNDERCUT,
         DoubleBottomFault.WEAK_MIDDLE_REBOUND,
     }
