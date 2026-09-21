@@ -110,3 +110,33 @@ def test_handle_region_measurements_are_additive_and_do_not_change_state():
     assert geometry.low_in_upper_half is False
     assert handle.state == HandleState.REJECTED
     assert HandleFault.BELOW_CUP_MIDPOINT in handle.faults
+
+
+def test_handle_region_measurements_require_full_pre20_volume_history():
+    cup = _rounded_u()
+    right = cup.geometry.right_rim.price_date
+    low = _mark(LandmarkType.SWING_LOW, 92.0, right + timedelta(days=2))
+    recovery = _mark(LandmarkType.SWING_HIGH, 97.0, right + timedelta(days=5))
+    dates = [right - timedelta(days=10) + timedelta(days=i) for i in range(16)]
+    frame = pd.DataFrame({"date": dates, "close": [95.0] * len(dates), "volume": [1000.0] * len(dates)})
+    geometry = build_handle_geometry(cup.geometry, _session_index(cup), low, recovery, frame=frame)
+    assert geometry.handle_to_pre20_median_volume_ratio is None
+
+
+def test_handle_region_measurements_are_causal_through_recovery():
+    cup = _rounded_u()
+    right = cup.geometry.right_rim.price_date
+    low = _mark(LandmarkType.SWING_LOW, 92.0, right + timedelta(days=2))
+    recovery = _mark(LandmarkType.SWING_HIGH, 97.0, right + timedelta(days=5))
+    start = right - timedelta(days=25)
+    dates = [start + timedelta(days=i) for i in range(40)]
+    frame = pd.DataFrame({"date": dates, "close": [95.0] * len(dates), "volume": [1000.0] * len(dates)})
+    base = build_handle_geometry(cup.geometry, _session_index(cup, extra_days=20), low, recovery, frame=frame)
+    changed = frame.copy()
+    changed.loc[changed["date"] > recovery.price_date, "close"] = 1.0
+    changed.loc[changed["date"] > recovery.price_date, "volume"] = 999999.0
+    replay = build_handle_geometry(cup.geometry, _session_index(cup, extra_days=20), low, recovery, frame=changed)
+    assert base.median_close_position_in_cup == replay.median_close_position_in_cup
+    assert base.normalized_close_slope == replay.normalized_close_slope
+    assert base.handle_to_pre20_median_volume_ratio == replay.handle_to_pre20_median_volume_ratio
+    assert assess_handle(base).state == assess_handle(replay).state
