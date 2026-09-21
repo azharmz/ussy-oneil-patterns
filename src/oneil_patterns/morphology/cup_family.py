@@ -28,11 +28,11 @@ class HandleGeometry:
     cup_midpoint_price: float
     low_in_upper_half: bool
     recovery_to_right_rim_ratio: float
-    median_close_position_in_cup: float
-    fraction_closes_at_or_above_cup_midpoint: float
-    minimum_close_position_in_cup: float
-    normalized_close_slope: float
-    handle_to_pre20_median_volume_ratio: float | None
+    median_close_position_in_cup: float | None = None
+    fraction_closes_at_or_above_cup_midpoint: float | None = None
+    minimum_close_position_in_cup: float | None = None
+    normalized_close_slope: float | None = None
+    handle_to_pre20_median_volume_ratio: float | None = None
 
     def __post_init__(self) -> None:
         if self.handle_high.type != LandmarkType.SWING_HIGH:
@@ -105,7 +105,7 @@ def build_handle_geometry(
     depth = (handle_high.price - handle_low.price) / handle_high.price
 
     # Additive vNext research evidence. State semantics below remain unchanged.
-    median_position = fraction_upper = minimum_position = normalized_slope = 0.0
+    median_position = fraction_upper = minimum_position = normalized_slope = None
     volume_ratio = None
     if frame is not None:
         import pandas as pd
