@@ -104,12 +104,13 @@ def observe_open_right_edge_handle(
         faults.append(HandleFault.TOO_SHORT)
     if not low_in_upper_half:
         faults.append(HandleFault.BELOW_CUP_MIDPOINT)
-
-    if faults:
-        state = HandleState.REJECTED
-    elif depth > NORMAL_MAX_HANDLE_DEPTH_PCT:
+    if depth > NORMAL_MAX_HANDLE_DEPTH_PCT:
         faults.append(HandleFault.DEEP_HANDLE_EXCEPTIONAL)
-        state = HandleState.AMBIGUOUS
+
+    if HandleFault.TOO_SHORT in faults:
+        state = HandleState.REJECTED
+    elif not low_in_upper_half and (median_position is None or median_position < 0.5):
+        state = HandleState.REJECTED
     else:
         state = HandleState.RECOGNIZED
 
