@@ -108,8 +108,8 @@ def evaluate_positive_development_label(
     pivot_date_tolerance_days: int = 3,
     pivot_price_tolerance_pct: float = 0.01,
 ) -> SourceDimensionAgreement:
-    if label.split != CorpusSplit.DEVELOPMENT:
-        raise ValueError("source-dimension evaluator is locked to DEVELOPMENT labels")
+    if label.split not in (CorpusSplit.DEVELOPMENT, CorpusSplit.VALIDATION):
+        raise ValueError("source-dimension evaluator requires DEVELOPMENT or explicitly unlocked VALIDATION labels")
     if label.label != LabelValue.POSITIVE:
         raise ValueError("v0.5 evaluates positive authoritative labels only")
     if boundary_tolerance_days < 0 or pivot_date_tolerance_days < 0 or pivot_price_tolerance_pct < 0:
