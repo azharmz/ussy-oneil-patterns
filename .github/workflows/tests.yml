@@ -2,7 +2,7 @@ name: tests
 
 on:
   push:
-    branches: [main, research/cwoh-vnext-measurement]
+    branches: [main]
   pull_request:
   workflow_dispatch:
     inputs:
@@ -46,9 +46,7 @@ jobs:
           cache: pip
       - run: python -m pip install -e ".[validation]"
       - run: |
-          if [[ "${{ github.ref_name }}" == "research/cwoh-vnext-measurement" ]]; then
-            python scripts/run_p8_development.py --labels data/p8/diagnostics/cwoh_vnext_development.csv
-          elif [[ "${{ github.event_name }}" == "push" ]]; then
+          if [[ "${{ github.event_name }}" == "push" ]]; then
             python scripts/run_p8_development.py --validation --example-id p8-label-0002
           else
             python scripts/run_p8_development.py
