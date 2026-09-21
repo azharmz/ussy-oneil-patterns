@@ -22,6 +22,7 @@ class MorphologyPrediction:
     detector_faults: tuple[str, ...] = ()
     candidate_semantics: str = "CONFIRMED_STRUCTURE"
     structural_signature: tuple[str, ...] = ()
+    evidence: dict = field(default_factory=dict)
 
 
 @dataclass(frozen=True, slots=True)
