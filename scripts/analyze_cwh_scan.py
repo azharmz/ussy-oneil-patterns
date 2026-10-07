@@ -184,7 +184,7 @@ def main() -> None:
         f"clusters per ticker   : median {per_ticker.clusters.median():.0f}, max {per_ticker.clusters.max()}",
         f"handle variants/body  : mean {bodies.handle_variants.mean():.2f}, max {bodies.handle_variants.max()}",
         f"pivot == right rim    : {handles.pivot_is_right_rim.mean():.1%} dari assessment",
-        f"asof terbaru          : {(handles["asof"] == handles["asof"].max()).mean():.1%} dari assessment",
+        f"asof terbaru          : {(handles[\u0027asof\u0027] == handles[\u0027asof\u0027].max()).mean():.1%} dari assessment",
         "",
         "Sebaran cup body (sesi / depth):",
         bodies[["decline_sessions", "recovery_sessions", "cup_sessions", "cup_depth", "decline_fraction"]]
